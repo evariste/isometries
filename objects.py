@@ -4,7 +4,7 @@ Date: 08/06/2023
 """
 
 import numpy as np
-from utilities import ensure_vec_3d
+from utilities import ensure_vec_3d, ensure_vec_2d, ensure_unit_vec_3d, ensure_unit_vec_2d
 from vtk_utils import run_triangle_filter
 from vtk_io import make_vtk_polydata, polydata_save
 from matplotlib.patches import Polygon
@@ -182,4 +182,91 @@ class Glyph2D(object):
             facecolor = self.facecolor
 
         return Polygon(self.points.T, closed=True, facecolor=facecolor, label=label)
+
+    def bounds(self):
+        min_vals = np.min(self.points, axis=1)
+        max_vals = np.max(self.points, axis=1)
+        x0 = min_vals[0]
+        y0 = min_vals[1]
+        x1 = max_vals[0]
+        y1 = max_vals[1]
+
+        return x0, y0, x1, y1
+
+
+def get_glyph_bounds(glyphs):
+    all_bounds = [list(g.bounds()) for g in glyphs]
+    all_bounds = np.asarray(all_bounds)
+    min_vals = np.min(all_bounds, axis=0)
+    max_vals = np.max(all_bounds, axis=0)
+    x0 = min_vals[0]
+    y0 = min_vals[1]
+    x1 = max_vals[2]
+    y1 = max_vals[3]
+    return x0, y0, x1, y1
+
+class Line2D:
+    parallel_tol_angle = 0.001
+
+    def __init__(self, pt, direction):
+        self.point = ensure_vec_2d(pt)
+        self.direction = ensure_unit_vec_2d(direction)
+
+        u, v = self.direction
+        p0, p1 = self.point
+
+        # ax + by = c
+        self.a = float(v)
+        self.b = -1.0 * float(u)
+        self.c = v * float(p0) - u * float(p1)
+
+        return
+
+    def f_x(self, x):
+        if np.abs(self.b) > 0:
+            y = (self.c - self.a * x) / self.b
+        else:
+            raise Exception('Line is of form x = constant')
+        return y
+
+    def angle_to(self, other):
+
+        u =  self.direction
+        v = other.direction
+
+        angle = np.arccos(
+            np.abs(u.T @ v)
+        )[0][0]
+
+        return angle
+
+    def parallel_to(self, other):
+
+        return self.angle_to(other) < self.parallel_tol_angle
+
+    def intersection(self, other):
+
+        M = np.asarray([
+            [self.a, self.b],
+            [other.a, other.b]
+        ])
+
+        consts = ensure_vec_2d([self.c, other.c])
+
+        det = M[0, 0] * M[1, 1] - M[0, 1] * M[1, 0]
+
+        if np.abs(det) < 0.001:
+            raise Exception('Lines are parallel or near to it.')
+
+
+        Minv = np.array([
+            [other.b, -1 * self.b],
+            [-1 * other.a, self.a]
+        ]) / det
+
+        xy = Minv @ consts
+
+        return xy
+
+
 
