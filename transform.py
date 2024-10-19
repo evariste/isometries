@@ -7,10 +7,14 @@ import numpy as np
 from abc import ABC, abstractmethod
 from utilities import (
     ensure_vec_3d, ensure_pts_3d,
+    ensure_unit_vec_2d, ensure_pts_2d,
     rotation_matrix_from_axis_and_angle,
     angle_from_rotation_matrix,
     axis_from_rotation_matrix
 )
+
+from objects import Line2D
+
 class Transform(ABC):
     def __init__(self):
         pass
@@ -184,4 +188,33 @@ def compose_rotatations(rot_A, rot_B):
         assert np.allclose(screw.homogeneous_matrix(), M), 'Error finding screw transform.'
 
     return screw
+
+
+class Reflection2D:
+
+    def __init__(self, line: Line2D):
+
+        self.line = line
+        self.direction = line.direction
+        normal = [-1.0 * line.direction[1], line.direction[0]]
+        self.normal = ensure_unit_vec_2d(normal)
+
+
+    def apply(self, points):
+
+        points_out = ensure_pts_2d(points)
+
+        points_out = points_out - self.line.point
+
+        comp1 = self.direction.T @ points_out
+        comp1 = self.direction @ comp1
+        comp2 = points_out - comp1
+
+        points_out = comp1 - comp2
+
+        points_out = points_out + self.line.point
+
+        return points_out
+
+
 
