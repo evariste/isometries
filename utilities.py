@@ -6,16 +6,34 @@ Date: 08/06/2023
 import numpy as np
 
 def ensure_pts_3d(points):
-    dim, n_pts = points.shape
+    assert points.ndim == 2, 'Points array must be 2D'
 
-    if dim == 2:
+    spatial_dim, n_pts = points.shape
+
+    assert n_pts > 0, 'Must have at least one point.'
+
+    if spatial_dim == 2:
         pts_out = np.vstack([points, np.zeros((1, n_pts))])
-    elif dim == 3:
+    elif spatial_dim == 3:
         pts_out = points.copy()
     else:
         raise Exception('Invalid point dimension.')
 
     return pts_out.astype(np.float64)
+
+def ensure_pts_2d(points):
+    assert points.ndim == 2, 'Points array must be 2D'
+
+    spatial_dim, n_pts = points.shape
+
+    assert spatial_dim == 2, 'Must be 2D points.'
+
+    assert n_pts > 0, 'Must have at least one point.'
+
+    return points.copy().astype(np.float64)
+
+
+
 
 def ensure_vec_3d(vec: list):
     if np.size(vec) == 2:
@@ -28,7 +46,35 @@ def ensure_vec_3d(vec: list):
         tt = np.asarray(tt)
     return np.reshape(tt, (3,1)).astype(np.float64)
 
+def ensure_unit_vec_3d(vec):
 
+    v = ensure_vec_3d(vec)
+    d = np.sqrt(np.sum(v * v))
+    if np.abs(d) > 0:
+        v = v / d
+    else:
+        raise Exception('Cannot return unit from zero vector.')
+    return v
+
+def ensure_vec_2d(vec: list):
+    assert np.size(vec) == 2, 'Invalid size for 2D vector.'
+
+    v = vec.copy()
+
+    if isinstance(v, list):
+        v = np.asarray(v)
+
+    return np.reshape(v, (2,1)).astype(np.float64)
+
+def ensure_unit_vec_2d(vec):
+
+    v = ensure_vec_2d(vec)
+    d = np.sqrt(np.sum(v * v))
+    if np.abs(d) > 0:
+        v = v / d
+    else:
+        raise Exception('Cannot return unit from zero vector.')
+    return v
 
 def nearest_point_on_line(line, point):
     pt = ensure_vec_3d(point)
@@ -304,7 +350,8 @@ def matrix2params_affine_3D(matrix):
     tansxz /= sz
     tansyz /= sz
 
-    cross_c1_c2 = np.cross(c1, c2)
+    cross_c1_c2 = cross_product(c1, c2)
+
     if c0.dot(cross_c1_c2) < 0:
         sx *= -1
         sy *= -1
@@ -332,3 +379,6 @@ def matrix2params_affine_3D(matrix):
                        sxy, syz, sxz])
 
 
+def cross_product(v1, v2):
+    # Wrapper prevents lint warnings if np.cross is placed directly in blocks of code.
+    return np.cross(v1, v2)
