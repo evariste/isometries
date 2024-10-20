@@ -79,6 +79,21 @@ def ensure_unit_vec_2d(vec):
 def wrap_angle_minus_pi_to_pi(alpha):
     return np.arctan2(np.sin(alpha), np.cos(alpha))
 
+def angle_to_2d_line_direction(alpha):
+    """
+    Return an angle in the range -pi/2 to pi/2 to indicate a line direction in 2D.
+
+    We identify angles in quadrants to the left of the y axis with their offset
+    by half a turn to get an angle in the quadrants on the right of the y axis.
+    """
+
+    direction = wrap_angle_minus_pi_to_pi(alpha)
+    if direction > np.pi / 2.0:
+        direction -= np.pi
+    if direction < -1.0 * np.pi / 2.0:
+        direction += np.pi
+
+    return direction
 def nearest_point_on_line(line, point):
     pt = ensure_vec_3d(point)
     disp = pt - line.pt
