@@ -3,15 +3,8 @@ Created by: Paul Aljabar
 Date: 08/06/2023
 """
 
-import numpy as np
 from abc import ABC, abstractmethod
-from utilities import (
-    ensure_vec_3d, ensure_pts_3d,
-    ensure_unit_vec_2d, ensure_pts_2d,
-    rotation_matrix_from_axis_and_angle,
-    angle_from_rotation_matrix,
-    axis_from_rotation_matrix
-)
+from utilities import *
 
 from objects import Line2D
 
@@ -217,4 +210,30 @@ class Reflection2D:
         return points_out
 
 
+
+class Rotation2D:
+
+    def __init__(self, centre, angle):
+
+        self.centre = ensure_vec_2d(centre)
+        self.angle = wrap_angle_minus_pi_to_pi(angle)
+
+        # Set up a pair of reflections that can be used
+        # to execute this rotation.
+        half_angle = self.angle / 2.0
+
+        line_1 = Line2D(self.centre, [1, 0])
+        line_2 = Line2D(self.centre, [np.cos(half_angle), np.sin(half_angle)])
+
+        self.ref_1 = Reflection2D(line_1)
+        self.ref_2 = Reflection2D(line_2)
+
+        return
+
+    def apply(self, points):
+        # Apply the pair of reflections
+        pts = self.ref_1.apply(points)
+        pts = self.ref_2.apply(pts)
+
+        return pts
 
