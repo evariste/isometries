@@ -76,6 +76,9 @@ def ensure_unit_vec_2d(vec):
         raise Exception('Cannot return unit from zero vector.')
     return v
 
+def wrap_angle_minus_pi_to_pi(alpha):
+    return np.arctan2(np.sin(alpha), np.cos(alpha))
+
 def nearest_point_on_line(line, point):
     pt = ensure_vec_3d(point)
     disp = pt - line.pt
