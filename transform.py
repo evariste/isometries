@@ -237,3 +237,50 @@ class Rotation2D:
 
         return pts
 
+    def followed_by(self, other):
+        A = self.centre
+        B = other.centre
+        theta = self.angle
+        phi = other.angle
+        if np.allclose(A, B):
+            result = Rotation2D(A, theta + phi)
+            return result
+
+        # A and B are distinct.
+        m = Line2D(A, B - A)
+        m_dir = np.squeeze(m.direction)
+        m_ang = np.arctan2(m_dir[1], m_dir[0])
+
+        l_ang = m_ang - theta / 2.0
+        l_dir = [np.cos(l_ang), np.sin(l_ang)]
+        l = Line2D(A, l_dir)
+
+        n_ang = m_ang + phi / 2.0
+        n_dir = [np.cos(n_ang), np.sin(n_ang)]
+        n = Line2D(B, n_dir)
+
+        if l.parallel_to(n):
+            perp_dir = [-1.0 * l_dir[1], l_dir[0]]
+            perp_line = Line2D(A, perp_dir)
+            X = perp_line.intersection(n)
+            disp_l_to_n = X - A
+            dist_l_to_n = np.sqrt(disp_l_to_n.T @ disp_l_to_n)
+            displacement = 2.0 * dist_l_to_n * perp_line.direction
+            result = Translation2D(displacement)
+            return result
+
+        # l and n are not parallel.
+        C = l.intersection(n)
+        result = Rotation2D(C, theta + phi)
+        return result
+
+
+
+class Translation2D:
+
+    def __init__(self, v):
+
+        self.v = ensure_vec_2d(v)
+
+    def apply(self, points):
+        return points + self.v
