@@ -4,9 +4,7 @@ Date: 08/06/2023
 """
 
 from abc import ABC, abstractmethod
-
 import numpy as np
-
 from utilities import *
 
 from objects import Line2D
@@ -15,7 +13,7 @@ class Transform(ABC):
     def __init__(self):
         pass
     @abstractmethod
-    def apply(self, points, t=1.0):
+    def apply(self, points):
         """
         Apply to some points and return result.
         """
@@ -31,9 +29,9 @@ class Translation(Transform):
         super().__init__()
         self.vec = ensure_vec_3d(t)
 
-    def apply(self, points, t=1.0):
+    def apply(self, points):
         pts_out = ensure_pts_3d(points)
-        pts_out = pts_out + t * self.vec
+        pts_out = pts_out + self.vec
 
         dim, _ = points.shape
         if dim == 2:
@@ -41,11 +39,11 @@ class Translation(Transform):
 
         return pts_out
 
-    def homogeneous_matrix(self, t=1.0):
+    def homogeneous_matrix(self):
         M = np.eye(4)
         # [I v]
         # [0 1]
-        M[:3, 3:] = t * self.vec
+        M[:3, 3:] = self.vec
         return M
 
 
@@ -59,11 +57,11 @@ class Rotation(Transform):
     def __repr__(self):
         return f'Rotation({self.centre.flatten()},\n {self.axis.flatten()},\n {self.angle})'
 
-    def apply(self, points, t=1.0):
+    def apply(self, points):
 
         pts_out = ensure_pts_3d(points)
 
-        R = rotation_matrix_from_axis_and_angle(self.axis, t * self.angle)
+        R = rotation_matrix_from_axis_and_angle(self.axis, self.angle)
 
         pts_out = pts_out - self.centre
         pts_out = R @ pts_out
@@ -76,7 +74,7 @@ class Rotation(Transform):
 
         return pts_out
 
-    def homogeneous_matrix(self, t=1.0):
+    def homogeneous_matrix(self):
         M = np.eye(4)
 
         # [I t] [R 0] [I -t]
@@ -87,7 +85,7 @@ class Rotation(Transform):
         #
         # [R  -Rt + t ]
         # [0      1   ]
-        R = rotation_matrix_from_axis_and_angle(self.axis, t * self.angle)
+        R = rotation_matrix_from_axis_and_angle(self.axis, self.angle)
         M[:3, :3] = R
         M[:3, 3:] = -1.0 * R @ self.centre + self.centre
 
@@ -112,18 +110,18 @@ class Screw(Transform):
         self.tra = Translation(self.rot.axis * translate_dist)
         return
 
-    def homogeneous_matrix(self, t=1.0):
-        M1 = self.rot.homogeneous_matrix(t=t)
-        M2 =self.tra.homogeneous_matrix(t=t)
+    def homogeneous_matrix(self):
+        M1 = self.rot.homogeneous_matrix()
+        M2 =self.tra.homogeneous_matrix()
         return M2 @ M1
 
 
 
 
-    def apply(self, points, t=1.0):
+    def apply(self, points):
         pts_out = ensure_pts_3d(points)
-        pts_out = self.rot.apply(pts_out, t=t)
-        pts_out = self.tra.apply(pts_out, t=t)
+        pts_out = self.rot.apply(pts_out)
+        pts_out = self.tra.apply(pts_out)
         return pts_out
 
 
@@ -264,7 +262,7 @@ class Rotation2D(Transform):
         return Rotation2D(P, 2.0 * alpha)
 
 
-    def apply(self, points, t=1.0):# TODO
+    def apply(self, points):
         # Apply the pair of reflections
         pts = self.ref_1.apply(points)
         pts = self.ref_2.apply(pts)
@@ -319,8 +317,8 @@ class Translation2D(Transform):
         super().__init__()
         self.v = ensure_vec_2d(v)
 
-    def apply(self, points, t=1.0):
-        return points + self.v * t
+    def apply(self, points):
+        return points + self.v
 
     def homogeneous_matrix(self):
         T = np.eye(3)
