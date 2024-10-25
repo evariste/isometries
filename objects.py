@@ -4,7 +4,7 @@ Date: 08/06/2023
 """
 
 import numpy as np
-from utilities import ensure_vec_3d, ensure_vec_2d, ensure_unit_vec_3d, ensure_unit_vec_2d
+from utilities import ensure_vec_3d, ensure_vec_2d, ensure_unit_vec_3d, ensure_unit_vec_2d, wrap_angle_minus_pi_to_pi
 from vtk_utils import run_triangle_filter
 from vtk_io import make_vtk_polydata, polydata_save
 from matplotlib.patches import Polygon
@@ -211,15 +211,18 @@ class Line2D:
     def __init__(self, pt, direction):
         self.point = ensure_vec_2d(pt)
         self.direction = ensure_unit_vec_2d(direction)
+        self.perp = [-1.0 * self.direction[1], self.direction[0]]
 
         u, v = self.direction
+
         p0, p1 = self.point
 
         # ax + by = c
         self.a = float(v)
         self.b = -1.0 * float(u)
-        self.c = v * float(p0) - u * float(p1)
+        self.c = float(v * p0 - u * p1)
 
+        self.theta = np.arctan2(v, u)
         return
 
     def f_x(self, x):
@@ -229,20 +232,21 @@ class Line2D:
             raise Exception('Line is of form x = constant')
         return y
 
+    def get_point_on_line(self):
+        x = 0
+        try:
+            y = self.f_x(x)
+        except:
+            x = self.c / self.a
+            y = 0
+        return ensure_vec_2d([x, y])
+
     def angle_to(self, other):
-
-        u =  self.direction
-        v = other.direction
-
-        angle = np.arccos(
-            np.abs(u.T @ v)
-        )[0][0]
-
-        return angle
+        return wrap_angle_minus_pi_to_pi(other.theta - self.theta)
 
     def parallel_to(self, other):
 
-        return self.angle_to(other) < self.parallel_tol_angle
+        return np.abs(self.angle_to(other)) < self.parallel_tol_angle
 
     def intersection(self, other):
 
