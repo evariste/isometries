@@ -184,9 +184,11 @@ def compose_rotatations(rot_A, rot_B):
     return screw
 
 
-class Reflection2D:
+class Reflection2D(Transform):
 
     def __init__(self, line: Line2D):
+
+        super().__init__()
 
         self.line = line
         self.direction = line.direction
@@ -210,7 +212,20 @@ class Reflection2D:
 
         return points_out
 
+    def homogeneous_matrix(self,):
+        P = self.line.get_point_on_line()
+        O_line = Line2D([0, 0], self.direction)
+        O_refl = Reflection2D(O_line)
 
+        T_inv = Translation2D(-1.0 * P).homogeneous_matrix()
+        T = Translation2D(P).homogeneous_matrix()
+
+        M = np.eye(3)
+
+
+        M[:2, :2] = O_refl.apply(np.eye(2))
+
+        return T @ M @ T_inv
 
 class Rotation2D(Transform):
 
