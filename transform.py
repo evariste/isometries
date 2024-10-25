@@ -4,6 +4,9 @@ Date: 08/06/2023
 """
 
 from abc import ABC, abstractmethod
+
+import numpy as np
+
 from utilities import *
 
 from objects import Line2D
@@ -211,10 +214,12 @@ class Reflection2D:
 
 
 
-class Rotation2D:
+class Rotation2D(Transform):
+
 
     def __init__(self, centre, angle):
 
+        super().__init__()
         self.centre = ensure_vec_2d(centre)
         self.angle = wrap_angle_minus_pi_to_pi(angle)
 
@@ -259,7 +264,7 @@ class Rotation2D:
         return Rotation2D(P, 2.0 * alpha)
 
 
-    def apply(self, points):
+    def apply(self, points, t=1.0):# TODO
         # Apply the pair of reflections
         pts = self.ref_1.apply(points)
         pts = self.ref_2.apply(pts)
@@ -291,6 +296,21 @@ class Rotation2D:
         return Rotation2D.from_lines(l, n)
 
 
+    def homogeneous_matrix(self):
+        M = np.eye(3)
+        c = np.cos(self.angle)
+        s = np.sin(self.angle)
+        R = np.asarray([
+            [c, -1.0 * s],
+            [s, c]
+        ])
+        T_inv = Translation2D(-1.0 * self.centre).homogeneous_matrix()
+        T = Translation2D(self.centre).homogeneous_matrix()
+
+        M[:2, :2] = R
+
+        return T @ M @ T_inv
+
 
 class Translation2D(Transform):
 
@@ -304,5 +324,5 @@ class Translation2D(Transform):
 
     def homogeneous_matrix(self):
         T = np.eye(3)
-        T[0:2, 2] = self.v
+        T[:2, 2] = np.squeeze(self.v)
         return T
