@@ -230,6 +230,35 @@ class Rotation2D:
 
         return
 
+    @classmethod
+    def from_reflections(cls, refl_1: Reflection2D, refl_2: Reflection2D):
+        return cls.from_lines(refl_1.line, refl_2.line)
+
+
+    @classmethod
+    def from_lines(cls, line_1: Line2D, line_2: Line2D):
+
+        if line_1.parallel_to(line_2):
+
+            perp_dir = line_1.perp
+            A = line_1.get_point_on_line()
+            perp_line = Line2D(A, perp_dir)
+
+            X = perp_line.intersection(line_2)
+
+            disp_l_to_n = X - A
+            dist_l_to_n = np.sqrt(disp_l_to_n.T @ disp_l_to_n)
+            u_vec_l_to_n = disp_l_to_n / dist_l_to_n
+            displacement = 2.0 * dist_l_to_n * u_vec_l_to_n
+
+            return Translation2D(displacement)
+
+
+        P = line_1.intersection(line_2)
+        alpha = line_1.angle_to(line_2)
+        return Rotation2D(P, 2.0 * alpha)
+
+
     def apply(self, points):
         # Apply the pair of reflections
         pts = self.ref_1.apply(points)
@@ -259,28 +288,21 @@ class Rotation2D:
         n_dir = [np.cos(n_ang), np.sin(n_ang)]
         n = Line2D(B, n_dir)
 
-        if l.parallel_to(n):
-            perp_dir = [-1.0 * l_dir[1], l_dir[0]]
-            perp_line = Line2D(A, perp_dir)
-            X = perp_line.intersection(n)
-            disp_l_to_n = X - A
-            dist_l_to_n = np.sqrt(disp_l_to_n.T @ disp_l_to_n)
-            displacement = 2.0 * dist_l_to_n * perp_line.direction
-            result = Translation2D(displacement)
-            return result
-
-        # l and n are not parallel.
-        C = l.intersection(n)
-        result = Rotation2D(C, theta + phi)
-        return result
+        return Rotation2D.from_lines(l, n)
 
 
 
-class Translation2D:
+class Translation2D(Transform):
 
     def __init__(self, v):
 
+        super().__init__()
         self.v = ensure_vec_2d(v)
 
-    def apply(self, points):
-        return points + self.v
+    def apply(self, points, t=1.0):
+        return points + self.v * t
+
+    def homogeneous_matrix(self):
+        T = np.eye(3)
+        T[0:2, 2] = self.v
+        return T
