@@ -11,6 +11,29 @@ from matplotlib.patches import Polygon
 
 
 
+class Line3D(object):
+
+    def __init__(self, pt, direction):
+
+        self.pt = ensure_vec_3d(pt)
+        self.direction = ensure_unit_vec_3d(direction)
+
+        return
+
+    def nearest(self, point):
+
+        v = ensure_vec_3d(point)
+
+        pt_to_v = v - self.pt
+
+        coeff_along = np.sum(pt_to_v * self.direction)
+
+        nearest_pt = self.pt + coeff_along * self.direction
+
+        return nearest_pt
+
+
+
 class Plane3D:
     def __init__(self, normal, pt):
 
@@ -38,7 +61,7 @@ class Plane3D:
             raise Exception('Invalid type for intersecting object.')
 
 
-    def intersection_with_line(self, other):
+    def intersection_with_line(self, other: Line3D):
 
         raise Exception('Not implemented.')
 
@@ -65,27 +88,6 @@ class Plane3D:
 
 
 
-
-class Line3D(object):
-
-    def __init__(self, pt, direction):
-
-        self.pt = ensure_vec_3d(pt)
-        self.direction = ensure_unit_vec_3d(direction)
-
-        return
-
-    def nearest(self, point):
-
-        v = ensure_vec_3d(point)
-
-        pt_to_v = v - self.pt
-
-        coeff_along = np.sum(pt_to_v * self.direction)
-
-        nearest_pt = self.pt + coeff_along * self.direction
-
-        return nearest_pt
 
 class Glyph(object):
     def __init__(self):
