@@ -36,15 +36,14 @@ def ensure_pts_2d(points):
 
 
 def ensure_vec_3d(vec: list):
-    if np.size(vec) == 2:
-        tt = list(vec) + [0]
-    else:
-        tt = list(vec)
+    assert np.size(vec) == 3, 'Invalid size for 3D vector.'
 
-    assert np.size(tt) == 3
-    if isinstance(tt, list):
-        tt = np.asarray(tt)
-    return np.reshape(tt, (3,1)).astype(np.float64)
+    v = vec.copy()
+
+    if isinstance(v, list):
+        v = np.asarray(v)
+
+    return np.reshape(v, (3,1)).astype(np.float64)
 
 def ensure_unit_vec_3d(vec):
 
@@ -69,6 +68,7 @@ def ensure_vec_2d(vec: list):
 def ensure_unit_vec_2d(vec):
 
     v = ensure_vec_2d(vec)
+
     d = np.sqrt(np.sum(v * v))
     if np.abs(d) > 0:
         v = v / d
