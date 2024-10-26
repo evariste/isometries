@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 from utilities import *
 
-from objects import Line2D
+from objects import *
 
 class Transform(ABC):
     def __init__(self):
@@ -339,3 +339,33 @@ class Translation2D(Transform):
         T = np.eye(3)
         T[:2, 2] = np.squeeze(self.v)
         return T
+
+class Reflection3D(Transform):
+
+    def __init__(self, plane: Plane3D):
+        super().__init__()
+
+        self.plane = plane
+
+        return
+
+
+    def apply(self, points):
+        X = self.plane.pt
+        n = self.plane.normal
+
+        disps = points - X
+
+        coeff_norm = n.T @ disps
+
+        comp_norm = n @ coeff_norm
+
+        ret = disps - 2 * comp_norm
+
+        return ret
+
+
+
+    def homogeneous_matrix(self):
+        pass
+
