@@ -30,7 +30,7 @@ class Translation(Transform):
         self.vec = ensure_vec_3d(t)
 
     def apply(self, points):
-        pts_out = ensure_pts_3d(points)
+        pts_out = validate_pts(points)
         pts_out = pts_out + self.vec
 
         dim, _ = points.shape
@@ -59,7 +59,7 @@ class Rotation(Transform):
 
     def apply(self, points):
 
-        pts_out = ensure_pts_3d(points)
+        pts_out = validate_pts(points)
 
         R = rotation_matrix_from_axis_and_angle(self.axis, self.angle)
 
@@ -119,7 +119,7 @@ class Screw(Transform):
 
 
     def apply(self, points):
-        pts_out = ensure_pts_3d(points)
+        pts_out = validate_pts(points)
         pts_out = self.rot.apply(pts_out)
         pts_out = self.tra.apply(pts_out)
         return pts_out
@@ -198,7 +198,7 @@ class Reflection2D(Transform):
 
     def apply(self, points):
 
-        points_out = ensure_pts_2d(points)
+        points_out = validate_pts(points)
 
         points_out = points_out - self.line.point
 
@@ -333,12 +333,12 @@ class Translation2D(Transform):
         self.v = ensure_vec_2d(v)
 
     def apply(self, points):
-        pts = ensure_pts_3d(points)
+        pts = validate_pts(points)
         return pts + self.v
 
     def homogeneous_matrix(self):
         T = np.eye(3)
-        T[:2, 2] = np.squeeze(self.v)
+        T[:2, -1] = np.squeeze(self.v)
         return T
 
 
@@ -350,12 +350,12 @@ class Translation3D(Transform):
         self.v = ensure_vec_3d(v)
 
     def apply(self, points):
-        pts = ensure_pts_3d(points)
+        pts = validate_pts(points)
         return pts + self.v
 
     def homogeneous_matrix(self):
         T = np.eye(4)
-        T[:3, 2] = np.squeeze(self.v)
+        T[:3, -1] = np.squeeze(self.v)
         return T
 
 
@@ -380,7 +380,7 @@ class Reflection3D(Transform):
 
         comp_norm = n @ coeff_norm
 
-        ret = disps - 2 * comp_norm
+        ret = disps - 2 * comp_norm + X
 
         return ret
 
@@ -388,6 +388,20 @@ class Reflection3D(Transform):
 
     def homogeneous_matrix(self):
 
-        # TODO
-        pass
+        pt = self.plane.pt
+        n = self.plane.normal
+
+        T_inv = Translation3D(-1.0 * pt).homogeneous_matrix()
+        T = Translation3D(pt).homogeneous_matrix()
+
+        M = np.eye(4)
+
+        I3 = np.eye(3)
+        coeff = n.T @ I3
+        comp_norm = n @ coeff
+        M[:3, :3] = I3 - 2 * comp_norm
+
+        H = T @ M @ T_inv
+        return H
+
 
