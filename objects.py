@@ -4,32 +4,50 @@ Date: 08/06/2023
 """
 
 import numpy as np
-from utilities import ensure_vec_3d, ensure_vec_2d, ensure_unit_vec_3d, ensure_unit_vec_2d, wrap_angle_minus_pi_to_pi
+from utilities import ensure_vec_3d, ensure_vec_2d, ensure_unit_vec_3d, ensure_unit_vec_2d, wrap_angle_minus_pi_to_pi, vecs_parallel, cross_product
 from vtk_utils import run_triangle_filter
 from vtk_io import make_vtk_polydata, polydata_save
 from matplotlib.patches import Polygon
 
-class Plane:
+
+
+class Plane3D:
     def __init__(self, normal, pt):
-        self.normal = ensure_vec_3d(normal)
 
-        d = np.sqrt(np.sum(self.normal * self.normal))
-        assert d > 0, 'Normal is zero vector'
-        self.normal = self.normal / d
+        self.normal = ensure_unit_vec_2d(normal)
 
-        self.pt = ensure_vec_3d(pt)
+        p = ensure_unit_vec_3d(pt)
 
-        self.const = np.sum(self.normal * self.pt)
+        self.const = np.sum(self.normal * p)
+
+        self.pt = self.const * self.normal
 
         return
+
+    def parallel_to(self, other):
+        return vecs_parallel(self.normal, other.normal)
+
+
     def intersection(self, other):
 
-        cosine = np.abs(np.sum(self.normal * other.normal))
+        if isinstance(other, Plane3D):
+            return self.intersection_with_plane(other)
+        elif isinstance(other, Line3D):
+            return self.intersection_with_line(other)
+        else:
+            raise Exception('Invalid type for intersecting object.')
 
-        if np.isclose(cosine, 1.0):
+
+    def intersection_with_line(self, other):
+
+        raise Exception('Not implemented.')
+
+    def intersection_with_plane(self, other):
+
+        if self.parallel_to(other):
             raise Exception('Planes are parallel.')
 
-        direction = np.cross(self.normal.flatten(), other.normal.flatten())
+        direction = cross_product(self.normal, other.normal)
 
         M = np.zeros((2,3))
         M[0, :] = self.normal.flatten()
@@ -41,24 +59,19 @@ class Plane:
 
         pt_inter, residuals, rank, sing_vals = np.linalg.lstsq(M, b, rcond=None)
 
-        intersection = Line(pt_inter, direction)
+        intersection = Line3D(pt_inter, direction)
 
         return intersection
 
 
 
 
+class Line3D(object):
 
-
-class Line(object):
     def __init__(self, pt, direction):
+
         self.pt = ensure_vec_3d(pt)
-        self.direction = ensure_vec_3d(direction)
-
-        d_norm = np.sqrt(np.sum(self.direction * self.direction))
-        assert d_norm > 0, 'Zero vector given as direction.'
-
-        self.direction /= d_norm
+        self.direction = ensure_unit_vec_3d(direction)
 
         return
 
@@ -66,12 +79,11 @@ class Line(object):
 
         v = ensure_vec_3d(point)
 
-        cent_to_v = v - self.pt
+        pt_to_v = v - self.pt
 
-        coeff_along = np.sum(cent_to_v * self.direction)
-        comp_along = coeff_along * self.direction
+        coeff_along = np.sum(pt_to_v * self.direction)
 
-        nearest_pt = self.pt + comp_along
+        nearest_pt = self.pt + coeff_along * self.direction
 
         return nearest_pt
 
@@ -271,6 +283,8 @@ class Line2D:
         xy = Minv @ consts
 
         return xy
+
+
 
 
 

@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 from colour import get_Nth_colour, get_color_list
 from vtk_io import make_vtk_polydata, polydata_save
 from utilities import ensure_vec_3d, nearest_point_on_line
-from objects import Glyph2D, Glyph3D, Line
+from objects import Glyph2D, Glyph3D, Line3D
 from transform import Rotation, compose_rotatations
 
 
@@ -48,7 +48,7 @@ def example_3d():
 
 
     u = ensure_vec_3d(glyph0.points[:,0])
-    L = Line(rot_1.centre, rot_1.axis)
+    L = Line3D(rot_1.centre, rot_1.axis)
     v = nearest_point_on_line(L, u)
     w = ensure_vec_3d(glyph1.points[:,0])
     y = v - 10 * L.direction
@@ -61,7 +61,7 @@ def example_3d():
 
 
     u = ensure_vec_3d(glyph1.points[:,0])
-    L = Line(rot_2.centre, rot_2.axis)
+    L = Line3D(rot_2.centre, rot_2.axis)
     v = nearest_point_on_line(L, u)
     w = ensure_vec_3d(glyph2.points[:,0])
     y = v - 10 * L.direction
@@ -72,7 +72,7 @@ def example_3d():
     polydata_save(pd, f'{working_dir}/lines2.vtk')
 
     u = ensure_vec_3d(glyph0.points[:, 0])
-    L = Line(tr_comp.rot.centre, tr_comp.rot.axis)
+    L = Line3D(tr_comp.rot.centre, tr_comp.rot.axis)
     uu = nearest_point_on_line(L, u)
 
     w = ensure_vec_3d(glyph4.points[:, 0])
