@@ -6,6 +6,20 @@ Date: 08/06/2023
 import numpy as np
 
 
+def cross_product(x, y):
+    return np.cross(x.T, y.T).T
+
+def vecs_perpendicular(u, v):
+    uu = ensure_unit_vec(u)
+    vv = ensure_unit_vec(v)
+    return np.isclose(np.abs(np.sum(uu * vv)), 0.0)
+
+def vecs_parallel(u, v):
+    uu = ensure_unit_vec(u)
+    vv = ensure_unit_vec(v)
+    return np.isclose(np.abs(np.abs(np.sum(uu * vv))), 1.0)
+
+
 def ensure_pts_3d(points):
     assert points.ndim == 2, 'Points array must be 2D'
 
@@ -34,9 +48,27 @@ def ensure_pts_2d(points):
 
     return points.copy().astype(np.float64)
 
+def ensure_vec(vec):
+    sz = np.size(vec)
+    if sz == 2:
+        return ensure_vec_2d(vec)
+    elif sz == 3:
+        return ensure_vec_3d(vec)
+    else:
+        raise Exception('Invalid dimension for vector')
+
+def ensure_unit_vec(vec):
+    sz = np.size(vec)
+    if sz == 2:
+        return ensure_unit_vec_2d(vec)
+    elif sz == 3:
+        return ensure_unit_vec_3d(vec)
+    else:
+        raise Exception('Invalid dimension for vector')
+
 
 def ensure_vec_3d(vec: list):
-    assert np.size(vec) == 3, 'Invalid size for 3D vector.'
+    assert np.size(vec) == 3, 'Invalid dimension for 3D vector.'
 
     v = vec.copy()
 
@@ -57,7 +89,7 @@ def ensure_unit_vec_3d(vec):
 
 
 def ensure_vec_2d(vec: list):
-    assert np.size(vec) == 2, 'Invalid size for 2D vector.'
+    assert np.size(vec) == 2, 'Invalid dimension for 2D vector.'
 
     v = vec.copy()
 
