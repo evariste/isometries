@@ -5,6 +5,7 @@ Date: 08/06/2023
 
 import numpy as np
 
+
 def ensure_pts_3d(points):
     assert points.ndim == 2, 'Points array must be 2D'
 
@@ -21,6 +22,7 @@ def ensure_pts_3d(points):
 
     return pts_out.astype(np.float64)
 
+
 def ensure_pts_2d(points):
     assert points.ndim == 2, 'Points array must be 2D'
 
@@ -33,8 +35,6 @@ def ensure_pts_2d(points):
     return points.copy().astype(np.float64)
 
 
-
-
 def ensure_vec_3d(vec: list):
     assert np.size(vec) == 3, 'Invalid size for 3D vector.'
 
@@ -43,10 +43,10 @@ def ensure_vec_3d(vec: list):
     if isinstance(v, list):
         v = np.asarray(v)
 
-    return np.reshape(v, (3,1)).astype(np.float64)
+    return np.reshape(v, (3, 1)).astype(np.float64)
+
 
 def ensure_unit_vec_3d(vec):
-
     v = ensure_vec_3d(vec)
     d = np.sqrt(np.sum(v * v))
     if np.abs(d) > 0:
@@ -54,6 +54,7 @@ def ensure_unit_vec_3d(vec):
     else:
         raise Exception('Cannot return unit from zero vector.')
     return v
+
 
 def ensure_vec_2d(vec: list):
     assert np.size(vec) == 2, 'Invalid size for 2D vector.'
@@ -63,10 +64,10 @@ def ensure_vec_2d(vec: list):
     if isinstance(v, list):
         v = np.asarray(v)
 
-    return np.reshape(v, (2,1)).astype(np.float64)
+    return np.reshape(v, (2, 1)).astype(np.float64)
+
 
 def ensure_unit_vec_2d(vec):
-
     v = ensure_vec_2d(vec)
 
     d = np.sqrt(np.sum(v * v))
@@ -76,8 +77,10 @@ def ensure_unit_vec_2d(vec):
         raise Exception('Cannot return unit from zero vector.')
     return v
 
+
 def wrap_angle_minus_pi_to_pi(alpha):
     return np.arctan2(np.sin(alpha), np.cos(alpha))
+
 
 def angle_to_2d_line_direction(alpha):
     """
@@ -94,6 +97,8 @@ def angle_to_2d_line_direction(alpha):
         direction += np.pi
 
     return direction
+
+
 def nearest_point_on_line(line, point):
     pt = ensure_vec_3d(point)
     disp = pt - line.pt
@@ -103,7 +108,6 @@ def nearest_point_on_line(line, point):
     nearest_pt = pt - comp_perp
 
     return nearest_pt
-
 
 
 def dist_between_pts(pt0, pt1):
@@ -125,6 +129,7 @@ def angle_from_three_points(vertex, first, second):
 
     return angle_between_vectors(vec1, vec2)
 
+
 def angle_between_vectors(v_first, v_second):
     v0 = ensure_vec_3d(v_first)
     v1 = ensure_vec_3d(v_second)
@@ -140,13 +145,6 @@ def angle_between_vectors(v_first, v_second):
     angle = np.arccos(cosine)
 
     return angle
-
-
-
-
-
-
-
 
     # RA, tA = rot_A.R, rot_A.centre
     # RB, tB = rot_B.R, rot_B.centre
@@ -183,7 +181,6 @@ def angle_between_vectors(v_first, v_second):
     # return Rotation(tC.flatten(), axisC, angleC)
 
 
-
 def get_normal_vector(v):
     """
     Return an arbitrary normal vector to v
@@ -207,10 +204,8 @@ def get_normal_vector(v):
 
     mag = np.sqrt(a * a + b * b + c * c)
     w = np.asarray([a, b, c]) / mag
-    w = np.reshape(w, (3,1))
+    w = np.reshape(w, (3, 1))
     return w
-
-
 
 
 def axis_from_rotation_matrix(R: np.ndarray):
@@ -219,7 +214,7 @@ def axis_from_rotation_matrix(R: np.ndarray):
     assert np.any(idxs), 'Expect at least one eigenvalue to be equal to 1'
     if np.allclose(evals, 1.0):
         # Identity matrix.
-        return np.asarray([0.0,0.0,1.0])
+        return np.asarray([0.0, 0.0, 1.0])
 
     k = np.argwhere(idxs)[0]
     axis = evecs[:, k]
@@ -257,14 +252,13 @@ def rotation_matrix_from_axis_and_angle(u, theta):
         raise Exception('Vector must be 3D')
 
     # Ensure u is a column vector.
-    u = u.reshape((3,1)).astype(float)
+    u = u.reshape((3, 1)).astype(float)
 
     mag = np.sqrt(np.sum(u * u))
     assert mag > 0, 'Vector must have non-zero magnitude.'
 
     # Normalize.
     u = u / mag
-
 
     # Outer product
     uut = u.dot(u.T)
@@ -278,6 +272,7 @@ def rotation_matrix_from_axis_and_angle(u, theta):
     R = uut + c * (I - uut) + s * skew_sym
 
     return R
+
 
 ############################################################################
 
@@ -298,13 +293,14 @@ def skew_symmetric_matrix(v):
     if not v.flatten().shape == (3,):
         raise Exception('Vector must be 3D')
 
-    s = np.zeros((3,3))
+    s = np.zeros((3, 3))
 
     s[0, 2] = v[1]
     s[1, 0] = v[2]
     s[2, 1] = v[0]
 
     return s + -1 * s.T
+
 
 ############################################################################
 
@@ -325,9 +321,9 @@ def matrix2params_affine_3D(matrix):
 
     m = np.copy(matrix)
 
-    assert m.shape == (4,4)
+    assert m.shape == (4, 4)
 
-    assert np.abs(1.0 - m[-1,-1]) < 0.000001
+    assert np.abs(1.0 - m[-1, -1]) < 0.000001
 
     det = np.linalg.det(m)
 
@@ -341,9 +337,9 @@ def matrix2params_affine_3D(matrix):
 
     tx, ty, tz = m[:3, -1]
 
-    c0 = m[:3,0]
-    c1 = m[:3,1]
-    c2 = m[:3,2]
+    c0 = m[:3, 0]
+    c1 = m[:3, 1]
+    c2 = m[:3, 2]
 
     sx = np.linalg.norm(c0)
     c0 /= sx
@@ -384,7 +380,7 @@ def matrix2params_affine_3D(matrix):
         rx = np.arctan2(c2[1], c2[2])
         rz = np.arctan2(c1[0], c0[0])
     else:
-        rx = np.arctan2(-1*c2[0]*c0[2], -1*c2[0]*c0[2])
+        rx = np.arctan2(-1 * c2[0] * c0[2], -1 * c2[0] * c0[2])
         rz = 0
 
     sxy = np.arctan(tansxy)
