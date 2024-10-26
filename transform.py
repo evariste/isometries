@@ -333,12 +333,32 @@ class Translation2D(Transform):
         self.v = ensure_vec_2d(v)
 
     def apply(self, points):
-        return points + self.v
+        pts = ensure_pts_3d(points)
+        return pts + self.v
 
     def homogeneous_matrix(self):
         T = np.eye(3)
         T[:2, 2] = np.squeeze(self.v)
         return T
+
+
+class Translation3D(Transform):
+
+    def __init__(self, v):
+
+        super().__init__()
+        self.v = ensure_vec_3d(v)
+
+    def apply(self, points):
+        pts = ensure_pts_3d(points)
+        return pts + self.v
+
+    def homogeneous_matrix(self):
+        T = np.eye(4)
+        T[:3, 2] = np.squeeze(self.v)
+        return T
+
+
 
 class Reflection3D(Transform):
 
@@ -367,5 +387,7 @@ class Reflection3D(Transform):
 
 
     def homogeneous_matrix(self):
+
+        # TODO
         pass
 
