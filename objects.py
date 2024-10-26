@@ -4,7 +4,7 @@ Date: 08/06/2023
 """
 
 import numpy as np
-from utilities import ensure_vec_3d, ensure_vec_2d, ensure_unit_vec_3d, ensure_unit_vec_2d, wrap_angle_minus_pi_to_pi, vecs_parallel, cross_product
+from utilities import *
 from vtk_utils import run_triangle_filter
 from vtk_io import make_vtk_polydata, polydata_save
 from matplotlib.patches import Polygon
@@ -28,18 +28,20 @@ class Line3D(object):
 
         coeff_along = np.sum(pt_to_v * self.direction)
 
-        nearest_pt = self.pt + coeff_along * self.direction
+        nearest_pt = self.point_from_parameter(coeff_along)
 
         return nearest_pt
 
+    def point_from_parameter(self, mu):
+        return self.pt + mu * self.direction
 
 
 class Plane3D:
     def __init__(self, normal, pt):
 
-        self.normal = ensure_unit_vec_2d(normal)
+        self.normal = ensure_unit_vec_3d(normal)
 
-        p = ensure_unit_vec_3d(pt)
+        p = ensure_vec_3d(pt)
 
         self.const = np.sum(self.normal * p)
 
@@ -61,9 +63,23 @@ class Plane3D:
             raise Exception('Invalid type for intersecting object.')
 
 
-    def intersection_with_line(self, other: Line3D):
+    def intersection_with_line(self, l: Line3D):
+        if vecs_perpendicular(self.normal, l.direction):
+            msg = 'Line either lies in plane or is parallel and separate.'
+            raise Exception(msg)
 
-        raise Exception('Not implemented.')
+        c = self.const
+        n = self.normal
+        p = l.pt
+        u = l.direction
+
+        u_dot_n = np.sum(u * n)
+        n_dot_p = np.sum(n * p)
+        mu = (c - n_dot_p) / u_dot_n
+
+        pt_intersection = l.point_from_parameter(mu)
+
+        raise pt_intersection
 
     def intersection_with_plane(self, other):
 
@@ -153,8 +169,8 @@ class Glyph3D(object):
         pd = run_triangle_filter(pd)
         polydata_save(pd, file_name)
 
-    def apply_transformation(self, transform, in_place=False, t=1.0):
-        new_points = transform.apply(self.points, t=t)
+    def apply_transformation(self, transform, in_place=False):
+        new_points = transform.apply(self.points)
         if in_place:
             self.points = new_points
             return self
