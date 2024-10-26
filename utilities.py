@@ -20,53 +20,46 @@ def vecs_parallel(u, v):
     vv = ensure_unit_vec(v)
     return np.isclose(np.abs(np.abs(np.sum(uu * vv))), 1.0)
 
+def make_pts_homogenous(points_in):
+    pts = validate_pts(points_in)
+    spatial_dim, n_pts = pts.shape
+    row_ones = np.ones((1, n_pts))
+    return np.vstack([pts, row_ones])
 
-def ensure_pts_3d(points_in):
+
+
+def validate_pts(points_in):
     if isinstance(points_in, list):
-        points = np.asarray(points_in)
+        points = np.asarray(points_in, dtype=np.float64)
     else:
         assert isinstance(points_in, np.ndarray), 'Invalid type for points.'
-        points = points_in.copy()
+        points = points_in.copy().astype(np.float64)
 
     assert points.ndim == 2, 'Point data array must be 2D'
 
     r, c = points.shape
-    if (c != 2) and (r == 2):
-        # Guess that rows correspond to points in the input.
-        points = np.transpose(points)
-    else:
-        assert c == 2, 'At least one dimension must be 2.'
 
-    n_pts = points.shape[1]
+    msg = 'Must have at least one point.'
+    # Expect rows to correspond to spatial dimension in first instance
+    if r == 2:
+        assert c > 0, msg
+        return points
 
-    assert n_pts > 0, 'Must have at least one point.'
+    if r == 3:
+        assert c > 0, msg
+        return points
 
-    return points.astype(np.float64)
+    # If we are here, then the columns might be the spatial dimension.
+    if c == 2:
+        assert r > 0, msg
+        return np.transpose(points)
 
+    if c == 3:
+        assert r > 0, msg
+        return np.transpose(points)
 
+    raise Exception('Invalid dimensions for points. Cannot validate.')
 
-def ensure_pts_2d(points_in):
-
-    if isinstance(points_in, list):
-        points = np.asarray(points_in)
-    else:
-        assert isinstance(points_in, np.ndarray), 'Invalid type for points.'
-        points = points_in.copy()
-
-    assert points.ndim == 2, 'Point data array must be 2D'
-
-    r, c = points.shape
-    if (c != 3) and (r == 3):
-        # Guess that rows correspond to points in the input.
-        points = np.transpose(points)
-    else:
-        assert c == 3, 'At least one dimension must be 3.'
-
-    n_pts = points.shape[1]
-
-    assert n_pts > 0, 'Must have at least one point.'
-
-    return points.astype(np.float64)
 
 
 def ensure_vec(vec):
