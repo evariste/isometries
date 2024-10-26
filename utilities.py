@@ -2,6 +2,7 @@
 Created by: Paul Aljabar
 Date: 08/06/2023
 """
+import sys
 
 import numpy as np
 
@@ -20,33 +21,53 @@ def vecs_parallel(u, v):
     return np.isclose(np.abs(np.abs(np.sum(uu * vv))), 1.0)
 
 
-def ensure_pts_3d(points):
-    assert points.ndim == 2, 'Points array must be 2D'
-
-    spatial_dim, n_pts = points.shape
-
-    assert n_pts > 0, 'Must have at least one point.'
-
-    if spatial_dim == 2:
-        pts_out = np.vstack([points, np.zeros((1, n_pts))])
-    elif spatial_dim == 3:
-        pts_out = points.copy()
+def ensure_pts_3d(points_in):
+    if isinstance(points_in, list):
+        points = np.asarray(points_in)
     else:
-        raise Exception('Invalid point dimension.')
+        assert isinstance(points_in, np.ndarray), 'Invalid type for points.'
+        points = points_in.copy()
 
-    return pts_out.astype(np.float64)
+    assert points.ndim == 2, 'Point data array must be 2D'
 
+    r, c = points.shape
+    if (c != 2) and (r == 2):
+        # Guess that rows correspond to points in the input.
+        points = np.transpose(points)
+    else:
+        assert c == 2, 'At least one dimension must be 2.'
 
-def ensure_pts_2d(points):
-    assert points.ndim == 2, 'Points array must be 2D'
-
-    spatial_dim, n_pts = points.shape
-
-    assert spatial_dim == 2, 'Must be 2D points.'
+    n_pts = points.shape[1]
 
     assert n_pts > 0, 'Must have at least one point.'
 
-    return points.copy().astype(np.float64)
+    return points.astype(np.float64)
+
+
+
+def ensure_pts_2d(points_in):
+
+    if isinstance(points_in, list):
+        points = np.asarray(points_in)
+    else:
+        assert isinstance(points_in, np.ndarray), 'Invalid type for points.'
+        points = points_in.copy()
+
+    assert points.ndim == 2, 'Point data array must be 2D'
+
+    r, c = points.shape
+    if (c != 3) and (r == 3):
+        # Guess that rows correspond to points in the input.
+        points = np.transpose(points)
+    else:
+        assert c == 3, 'At least one dimension must be 3.'
+
+    n_pts = points.shape[1]
+
+    assert n_pts > 0, 'Must have at least one point.'
+
+    return points.astype(np.float64)
+
 
 def ensure_vec(vec):
     sz = np.size(vec)
