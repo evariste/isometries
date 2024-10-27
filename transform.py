@@ -448,8 +448,12 @@ class OriginRotation3D(Transform):
         return
 
     def homogeneous_matrix(self):
-        pass
+        M0 = self.refl_0.homogeneous_matrix()
+        M1 = self.refl_1.homogeneous_matrix()
+        return M1 @ M0
 
     def apply(self, points):
-        pass
+        pts = self.refl_0.apply(points)
+        pts = self.refl_1.apply(pts)
+        return pts
 
