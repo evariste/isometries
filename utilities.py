@@ -474,3 +474,71 @@ def matrix2params_affine_3D(matrix):
                        sxy, syz, sxz])
 
 
+
+def random_rotation_3D():
+    R = random_rotation_matrix_3D()
+    axis = axis_from_rotation_matrix(R)
+    angle = angle_from_rotation_matrix(R)
+    return ensure_vec_3d(axis), angle
+
+def random_rotation_matrix_3D():
+    """
+    Julie C Mitchell, Sampling Rotation Groups by Successive Orthogonal
+    Images, SIAM J Sci comput. 30(1), 2008, pp 525-547
+
+    Generate R = [u0 u1 u2], where the columns are the images of the unit axis
+    vectors under the rotation.
+
+    :return:
+    """
+
+    # u2 uniformly sampled from a sphere (see
+    # http://mathworld.wolfram.com/SpherePointPicking.html
+
+    phi = 2 * np.pi * np.random.rand()
+    theta   = np.arccos(2 * np.random.rand() - 1)
+
+    u2 = np.asarray([np.cos(phi) * np.sin(theta),
+                     np.sin(phi) * np.sin(theta),
+                     np.cos(theta)])
+
+    u2 = np.atleast_2d(u2)
+    if u2.shape[0] == 1:
+        u2 = u2.T
+
+    # Sample u1 uniformly from the circle that is the intersection of the unit
+    # sphere with the plane through O and orthogonal to u2
+
+    eps = 0.000001
+
+    # Find a point w in the xy plane that is also in the plane orthogonal to u2
+    # and is one unit from the origin.
+
+    u2_0, u2_1 = u2.flat[:2]
+
+    if np.abs(u2_0) < eps:
+        w = np.asarray([0, 1, 0])
+    elif np.abs(u2_1) < eps:
+        w = np.asarray([1, 0, 0])
+    else:
+        w = np.asarray([u2_1, -u2_0, 0])
+        w = w / np.sqrt(np.sum(w * w))
+
+    w = np.atleast_2d(w)
+    if w.shape[0] == 1:
+        w = w.T
+
+    # Rotate w by a random angle around the axis u2
+    theta_w = 2 * np.pi * np.random.rand()
+    Rw = rotation_matrix_from_axis_and_angle(u2, theta_w)
+
+    u1 = Rw.dot(w)
+
+    # Disable warnings.
+    cross1 = lambda x, y: np.cross(x, y)
+    u0 = cross1(u1.T, u2.T).T
+
+    R = np.hstack([u0, u1, u2])
+
+    return R
+
