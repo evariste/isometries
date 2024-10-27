@@ -20,6 +20,9 @@ class Line3D(object):
 
         return
 
+    def __call__(self, mu):
+        return self.pt + mu * self.direction
+
     def nearest(self, point):
 
         v = ensure_vec_3d(point)
@@ -66,6 +69,23 @@ class Plane3D:
 
     def parallel_to(self, other):
         return vecs_parallel(self.normal, other.normal)
+
+    @classmethod
+    def from_points(cls, O, P, Q):
+        o = ensure_vec_3d(O)
+        p = ensure_vec_3d(P)
+        q = ensure_vec_3d(Q)
+
+        OP = p - o
+        OQ = q - o
+
+        if vecs_parallel(OP, OQ):
+            raise Exception('Collinear points.')
+
+        n = ensure_unit_vec_3d(cross_product(OP, OQ))
+
+        return cls(n, o)
+
 
 
     def intersection(self, other):
