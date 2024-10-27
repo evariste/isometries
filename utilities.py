@@ -8,7 +8,9 @@ import numpy as np
 
 
 def cross_product(x, y):
-    return np.cross(x.T, y.T).T
+    u = ensure_vec_3d(x, transpose=True)
+    v = ensure_vec_3d(y, transpose=True)
+    return np.transpose(np.cross(u, v))
 
 def vecs_perpendicular(u, v):
     uu = ensure_unit_vec(u)
@@ -25,6 +27,32 @@ def make_pts_homogenous(points_in):
     spatial_dim, n_pts = pts.shape
     row_ones = np.ones((1, n_pts))
     return np.vstack([pts, row_ones])
+
+def rotate_vector(vec, axis, angle):
+    """
+    Rotate the vector about the given axis by the given angle.
+    """
+    u = ensure_unit_vec_3d(axis)
+    v = ensure_vec_3d(vec)
+
+    if vecs_parallel(u, v):
+        return v
+
+    theta = wrap_angle_minus_pi_to_pi(angle)
+
+    comp_u_v = u.T @ v * u
+
+    perp_u_v = v - comp_u_v
+
+    d_perp_u_v = np.sqrt(perp_u_v.T @ perp_u_v)
+
+    w = cross_product(u, v)
+
+    rot_part_1 = np.cos(theta) * d_perp_u_v * perp_u_v
+
+    rot_part_2 = np.sin(theta) * d_perp_u_v * w
+
+    return comp_u_v + rot_part_1 + rot_part_2
 
 
 
@@ -81,15 +109,17 @@ def ensure_unit_vec(vec):
         raise Exception('Invalid dimension for vector')
 
 
-def ensure_vec_3d(vec: list):
+def ensure_vec_3d(vec: list, transpose=False):
     assert np.size(vec) == 3, 'Invalid dimension for 3D vector.'
 
     v = vec.copy()
 
     if isinstance(v, list):
         v = np.asarray(v)
-
-    return np.reshape(v, (3, 1)).astype(np.float64)
+    v = np.reshape(v, (3, 1)).astype(np.float64)
+    if transpose:
+        v = np.transpose(v)
+    return v
 
 
 def ensure_unit_vec_3d(vec):
@@ -102,7 +132,7 @@ def ensure_unit_vec_3d(vec):
     return v
 
 
-def ensure_vec_2d(vec: list):
+def ensure_vec_2d(vec: list, transpose=False):
     assert np.size(vec) == 2, 'Invalid dimension for 2D vector.'
 
     v = vec.copy()
@@ -110,7 +140,12 @@ def ensure_vec_2d(vec: list):
     if isinstance(v, list):
         v = np.asarray(v)
 
-    return np.reshape(v, (2, 1)).astype(np.float64)
+    v = np.reshape(v, (2, 1)).astype(np.float64)
+
+    if transpose:
+        v = np.transpose(v)
+
+    return v
 
 
 def ensure_unit_vec_2d(vec):
@@ -439,6 +474,3 @@ def matrix2params_affine_3D(matrix):
                        sxy, syz, sxz])
 
 
-def cross_product(v1, v2):
-    # Wrapper prevents lint warnings if np.cross is placed directly in blocks of code.
-    return np.cross(v1, v2)
