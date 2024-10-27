@@ -405,3 +405,51 @@ class Reflection3D(Transform):
         return H
 
 
+class OriginRotation3D(Transform):
+    """
+    Rotation about an axis going through (0, 0, 0).
+    """
+    def __init__(self, axis, angle):
+
+        super().__init__()
+
+        self.axis = ensure_unit_vec_3d(axis)
+        self.angle = wrap_angle_minus_pi_to_pi(angle)
+
+        origin = [0, 0, 0]
+        z_vec = [0, 0, 1]
+
+        axis_plane = Plane3D(self.axis, origin)
+        xy_plane = Plane3D(z_vec,  origin)
+
+        O = ensure_vec_3d([0, 0, 0])
+
+        if axis_plane.parallel_to(xy_plane):
+            u = [1, 0, 0]
+            v = rotate_vector(u, self.axis, self.angle / 2.0)
+            plane_0 = Plane3D(u, O)
+            plane_1 = Plane3D(v, O)
+        else:
+            l = axis_plane.intersection(xy_plane)
+
+            assert l.contains_point(O), 'Unexpected line of intersection.'
+            l.set_start_point(O)
+
+            P = l(10)
+            Q = O + 10 * self.axis
+            R = rotate_vector(P, self.axis, self.angle / 2.0)
+
+            plane_0 = Plane3D.from_points(O, P, Q)
+            plane_1 = Plane3D.from_points(O, R, Q)
+
+        self.refl_0 = Reflection3D(plane_0)
+        self.refl_1 = Reflection3D(plane_1)
+
+        return
+
+    def homogeneous_matrix(self):
+        pass
+
+    def apply(self, points):
+        pass
+
