@@ -35,6 +35,21 @@ class Line3D(object):
     def point_from_parameter(self, mu):
         return self.pt + mu * self.direction
 
+    def contains_point(self, X):
+        V = ensure_vec_3d(X)
+
+        if np.allclose(V, self.pt):
+            return True
+
+        u = V - self.pt
+        return vecs_parallel(u, self.direction)
+
+    def set_start_point(self, P):
+        self.pt = ensure_vec_3d(P)
+
+    def set_direction(self, v):
+        self.direction = ensure_unit_vec_3d(v)
+
 
 class Plane3D:
     def __init__(self, normal, pt):
