@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Created by: Paul Aljabar
 Date: 08/06/2023
@@ -67,7 +69,7 @@ class Plane3D:
 
         return
 
-    def parallel_to(self, other):
+    def parallel_to(self, other: Plane3D):
         return vecs_parallel(self.normal, other.normal)
 
     @classmethod
@@ -116,7 +118,7 @@ class Plane3D:
 
         raise pt_intersection
 
-    def intersection_with_plane(self, other):
+    def intersection_with_plane(self, other: Plane3D):
 
         if self.parallel_to(other):
             raise Exception('Planes are parallel.')
@@ -306,14 +308,14 @@ class Line2D:
             y = 0
         return ensure_vec_2d([x, y])
 
-    def angle_to(self, other):
+    def angle_to(self, other: Line2D):
         return wrap_angle_minus_pi_to_pi(other.theta - self.theta)
 
-    def parallel_to(self, other):
+    def parallel_to(self, other: Line2D):
 
         return np.abs(self.angle_to(other)) < self.parallel_tol_angle
 
-    def intersection(self, other):
+    def intersection(self, other: Line2D):
 
         M = np.asarray([
             [self.a, self.b],
