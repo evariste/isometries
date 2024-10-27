@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Created by: Paul Aljabar
 Date: 08/06/2023
@@ -446,6 +448,40 @@ class OriginRotation3D(Transform):
         self.refl_1 = Reflection3D(plane_1)
 
         return
+
+    @classmethod
+    def from_planes(cls, plane_0: Plane3D, plane_1: Plane3D):
+        if plane_0.parallel_to(plane_1):
+            return cls([1, 0, 0], 0)
+
+        n_0 = plane_0.normal
+        n_1 = plane_1.normal
+
+        axis = cross_product(n_0, n_1)
+
+        theta = angle_between_vectors(n_0, n_1)
+
+        return cls(axis, 2.0 * theta)
+
+    def followed_by(self, other: OriginRotation3D):
+
+        if vecs_parallel(self.axis, other.axis):
+            return OriginRotation3D(self.axis, self.angle + other.angle)
+
+        O = ensure_vec_3d([0, 0, 0])
+        P = 10 * self.axis
+        Q = 10 * other.axis
+        plane_shared = Plane3D.from_points(O, P, Q)
+        n_shared = plane_shared.normal
+
+        n_0 = rotate_vector(n_shared, self.axis, -0.5 * self.angle)
+
+        n_1 = rotate_vector(n_shared, other.axis, 0.5 * other.angle)
+
+        plane_0 = Plane3D(n_0, O)
+        plane_1 = Plane3D(n_1, O)
+
+        return OriginRotation3D.from_planes(plane_0, plane_1)
 
     def homogeneous_matrix(self):
         M0 = self.refl_0.homogeneous_matrix()
