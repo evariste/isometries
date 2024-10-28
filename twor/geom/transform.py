@@ -7,6 +7,8 @@ Date: 08/06/2023
 
 from abc import ABC, abstractmethod
 from twor.geom.objects import *
+from twor.utils.general import rotation_matrix_from_axis_and_angle
+
 
 class Transform(ABC):
     def __init__(self):
@@ -488,6 +490,12 @@ class OriginRotation3D(Transform):
         M0 = self.refl_0.homogeneous_matrix()
         M1 = self.refl_1.homogeneous_matrix()
         return M1 @ M0
+
+    def homogeneous_matrix_B(self):
+        R = rotation_matrix_from_axis_and_angle(self.axis, self.angle)
+        M = np.eye(4)
+        M[:3, :3] = R
+        return M
 
     def apply(self, points):
         pts = self.refl_0.apply(points)
