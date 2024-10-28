@@ -466,7 +466,11 @@ class OriginRotation3D(Transform):
     def followed_by(self, other: OriginRotation3D):
 
         if vecs_parallel(self.axis, other.axis):
-            return OriginRotation3D(self.axis, self.angle + other.angle)
+            if np.allclose(self.axis, other.axis):
+                return OriginRotation3D(self.axis, self.angle + other.angle)
+            else:
+                # Axes are opposing each other.
+                return OriginRotation3D(self.axis, self.angle - other.angle)
 
         O = ensure_vec_3d([0, 0, 0])
         P = 10 * self.axis
