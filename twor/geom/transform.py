@@ -6,10 +6,7 @@ Date: 08/06/2023
 """
 
 from abc import ABC, abstractmethod
-import numpy as np
-from utilities import *
-
-from objects import *
+from twor.geom.objects import *
 
 class Transform(ABC):
     def __init__(self):

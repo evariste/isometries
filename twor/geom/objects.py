@@ -6,9 +6,9 @@ Date: 08/06/2023
 """
 
 import numpy as np
-from utilities import *
-from vtk_utils import run_triangle_filter
-from vtk_io import make_vtk_polydata, polydata_save
+from twor.utils.general import *
+from twor.utils.vtk import run_triangle_filter
+from twor.io.vtk import make_vtk_polydata, polydata_save
 from matplotlib.patches import Polygon
 
 

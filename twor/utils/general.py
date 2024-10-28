@@ -2,7 +2,6 @@
 Created by: Paul Aljabar
 Date: 08/06/2023
 """
-import sys
 
 import numpy as np
 

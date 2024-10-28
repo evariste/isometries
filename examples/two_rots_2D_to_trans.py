@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from objects import Glyph2D, get_glyph_bounds
-from transform import Rotation2D
+from twor.geom.objects import Glyph2D, get_glyph_bounds
+from twor.geom.transform import Rotation2D
 
 
 
@@ -89,8 +89,8 @@ def line_glyph_to_glyph(k, glyph_0, glyph_1, colour):
     xy = np.vstack([p_0, p_1])
     plt.plot(xy[:, 0], xy[:, 1], ':', color=colour)
 
-for k in [1, 5]:
-    line_glyph_to_glyph(k, glyph_start, glyph_C, 'gray')
+for j in [1, 5]:
+    line_glyph_to_glyph(j, glyph_start, glyph_C, 'gray')
 
 plt.savefig('pics/two_rotations_2D_trans.png')
 plt.show()

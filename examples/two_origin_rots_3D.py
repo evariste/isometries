@@ -1,7 +1,7 @@
 import os
 import numpy as np
-from objects import Glyph3D
-from transform import OriginRotation3D, Translation3D
+from twor.geom.objects import Glyph3D
+from twor.geom.transform import OriginRotation3D, Translation3D
 
 os.makedirs('output/ex3', exist_ok=True)
 

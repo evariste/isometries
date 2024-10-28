@@ -5,11 +5,11 @@ Date: 08/04/2023
 import os
 import sys, numpy as np
 from matplotlib import pyplot as plt
-from colour import get_Nth_colour, get_color_list
-from vtk_io import make_vtk_polydata, polydata_save
-from utilities import ensure_vec_3d, nearest_point_on_line
-from objects import Glyph2D, Glyph3D, Line3D
-from transform import Rotation, compose_rotatations
+from twor.utils.colour import get_Nth_colour, get_color_list
+from twor.io.vtk import make_vtk_polydata, polydata_save
+from twor.utils.general import ensure_vec_3d, nearest_point_on_line
+from twor.geom.objects import Glyph2D, Glyph3D, Line3D
+from twor.geom.transform import Rotation, compose_rotatations
 
 
 def main():
@@ -44,7 +44,7 @@ def example_3d():
 
     tr_comp = compose_rotatations(rot_1, rot_2)
     glyph3 = glyph0.apply_transformation(tr_comp)
-    glyph4 = glyph0.apply_transformation(tr_comp, t=0.5)
+    glyph4 = glyph0.apply_transformation(tr_comp)
 
 
     u = ensure_vec_3d(glyph0.points[:,0])
