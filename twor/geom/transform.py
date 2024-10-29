@@ -56,7 +56,10 @@ class Rotation(Transform):
         self.angle = angle
 
     def __repr__(self):
-        return f'Rotation({self.centre.flatten()},\n {self.axis.flatten()},\n {self.angle})'
+        c = np.round(self.centre.flatten(), 2)
+        ax = np.round(self.axis.flatten(), 2)
+        ang = np.round(self.angle, 2)
+        return f'Rotation(\n{c},\n {ax},\n {ang}\n)'
 
     def apply(self, points):
 
@@ -502,3 +505,38 @@ class OriginRotation3D(Transform):
         pts = self.refl_1.apply(pts)
         return pts
 
+class Rotation3D(Transform):
+
+    def __init__(self, point, axis_dir, angle):
+        """
+        The axis goes through the point with the given direction,
+        angle is the rotation amount.
+        """
+
+        super().__init__()
+        self.rot = OriginRotation3D(axis_dir, angle)
+        self.point = ensure_vec_3d(point)
+        self.T_inv = Translation3D(-1.0 * self.point)
+        self.T = Translation3D(self.point)
+
+        return
+
+    def apply(self, points):
+        pts = self.T_inv.apply(points)
+        pts = self.rot.apply(points)
+        pts = self.T.apply(points)
+        return pts
+
+
+    def homogeneous_matrix(self):
+        M_T_inv = self.T_inv.homogeneous_matrix()
+        M_rot = self.rot.homogeneous_matrix()
+        M_T = self.T.homogeneous_matrix()
+
+        return M_T @ M_rot @ M_T_inv
+
+    def __repr__(self):
+        c = np.round(self.point.flatten(), 2)
+        ax = np.round(self.rot.axis.flatten(), 2)
+        ang = np.round(self.rot.angle, 2)
+        return f'Rotation(\n {c},\n {ax},\n {ang}\n)'
