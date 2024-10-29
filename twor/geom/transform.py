@@ -523,8 +523,8 @@ class Rotation3D(Transform):
 
     def apply(self, points):
         pts = self.T_inv.apply(points)
-        pts = self.rot.apply(points)
-        pts = self.T.apply(points)
+        pts = self.rot.apply(pts)
+        pts = self.T.apply(pts)
         return pts
 
 
