@@ -282,8 +282,10 @@ class Rotation2D(Transform):
 
 
     def apply(self, points):
+        pts = validate_pts(points)
+
         # Apply the pair of reflections
-        pts = self.ref_1.apply(points)
+        pts = self.ref_1.apply(pts)
         pts = self.ref_2.apply(pts)
 
         return pts
@@ -375,10 +377,13 @@ class Reflection3D(Transform):
 
 
     def apply(self, points):
+
+        pts = validate_pts(points)
+
         X = self.plane.pt
         n = self.plane.normal
 
-        disps = points - X
+        disps = pts - X
 
         coeff_norm = n.T @ disps
 
@@ -501,7 +506,8 @@ class OriginRotation3D(Transform):
         return M
 
     def apply(self, points):
-        pts = self.refl_0.apply(points)
+        pts = validate_pts(points)
+        pts = self.refl_0.apply(pts)
         pts = self.refl_1.apply(pts)
         return pts
 
@@ -522,7 +528,8 @@ class Rotation3D(Transform):
         return
 
     def apply(self, points):
-        pts = self.T_inv.apply(points)
+        pts = validate_pts(points)
+        pts = self.T_inv.apply(pts)
         pts = self.rot.apply(pts)
         pts = self.T.apply(pts)
         return pts
