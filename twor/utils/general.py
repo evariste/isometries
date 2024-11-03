@@ -27,6 +27,16 @@ def make_pts_homogenous(points_in):
     row_ones = np.ones((1, n_pts))
     return np.vstack([pts, row_ones])
 
+def apply_hom_matrix_to_points(M, pts):
+    """
+    Apply a homogeneous matrix to a point set.
+    pts: 3xN or 2xN
+    M: 4x4 or 3x3
+    return: transformed points.
+    """
+    pts_out = M @ make_pts_homogenous(pts)
+    return pts_out[:-1]
+
 def rotate_vector(vec, axis, angle):
     """
     Rotate the vector about the given axis by the given angle.
