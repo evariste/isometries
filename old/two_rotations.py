@@ -7,10 +7,177 @@ import sys, numpy as np
 from matplotlib import pyplot as plt
 from twor.utils.colour import get_Nth_colour, get_color_list
 from twor.io.vtk import make_vtk_polydata, polydata_save
-from twor.utils.general import ensure_vec_3d, nearest_point_on_line
+from twor.utils.general import (
+    ensure_vec_3d, nearest_point_on_line, validate_pts, 
+    rotation_matrix_from_axis_and_angle, 
+    axis_from_rotation_matrix, angle_from_rotation_matrix
+)
 from twor.geom.objects import Glyph2D, Glyph3D, Line3D
-from twor.geom.transform import Rotation, compose_rotatations
+from twor.geom.transform import Transform
 
+
+
+class Translation(Transform):
+    def __init__(self, t):
+        super().__init__()
+        self.vec = ensure_vec_3d(t)
+
+    def apply(self, points):
+        pts_out = validate_pts(points)
+        pts_out = pts_out + self.vec
+
+        dim, _ = points.shape
+        if dim == 2:
+            return pts_out[:2]
+
+        return pts_out
+
+    def homogeneous_matrix(self):
+        M = np.eye(4)
+        # [I v]
+        # [0 1]
+        M[:3, 3:] = self.vec
+        return M
+
+
+class Rotation(Transform):
+    def __init__(self, centre, axis, angle):
+        super().__init__()
+        self.centre = ensure_vec_3d(centre)
+        self.axis = ensure_vec_3d(axis)
+        self.angle = angle
+
+    def __repr__(self):
+        c = np.round(self.centre.flatten(), 2)
+        ax = np.round(self.axis.flatten(), 2)
+        ang = np.round(self.angle, 2)
+        return f'Rotation(\n{c},\n {ax},\n {ang}\n)'
+
+    def apply(self, points):
+
+        pts_out = validate_pts(points)
+
+        R = rotation_matrix_from_axis_and_angle(self.axis, self.angle)
+
+        pts_out = pts_out - self.centre
+        pts_out = R @ pts_out
+        pts_out = pts_out + self.centre
+        # pts_out = self.R @ pts_out + (np.eye(3) - self.R) @ self.centre
+
+        dim, _ = points.shape
+        if dim == 2:
+            return pts_out[:2]
+
+        return pts_out
+
+    def homogeneous_matrix(self):
+        M = np.eye(4)
+
+        # [I t] [R 0] [I -t]
+        # [0 1] [0 1] [0  1]
+        #
+        # [R t] [I -t]
+        # [0 1] [0  1]
+        #
+        # [R  -Rt + t ]
+        # [0      1   ]
+        R = rotation_matrix_from_axis_and_angle(self.axis, self.angle)
+        M[:3, :3] = R
+        M[:3, 3:] = -1.0 * R @ self.centre + self.centre
+
+        return M
+
+
+class Screw(Transform):
+    def __init__(self, centre, axis, angle, translate_dist):
+        """
+        Screw transformation: Combination of rotation and translation along
+        a single axis.
+
+        @param centre: Point on rotation axis
+        @param axis: of rotation
+        @param angle: of rotation
+        @param translate_dist: (signed) distance along axis to perform translation.
+        """
+        super().__init__()
+
+        self.rot = Rotation(centre, axis, angle)
+
+        self.tra = Translation(self.rot.axis * translate_dist)
+        return
+
+    def homogeneous_matrix(self):
+        M1 = self.rot.homogeneous_matrix()
+        M2 =self.tra.homogeneous_matrix()
+        return M2 @ M1
+
+
+
+
+    def apply(self, points):
+        pts_out = validate_pts(points)
+        pts_out = self.rot.apply(pts_out)
+        pts_out = self.tra.apply(pts_out)
+        return pts_out
+
+
+
+def compose_rotatations(rot_A, rot_B):
+    """
+    Generate a rotation rot_C such that rot_C (x) = rot_B ( rot_A (x) )
+
+    """
+
+    M_A = rot_A.homogeneous_matrix()
+    M_B = rot_B.homogeneous_matrix()
+    M = M_B @ M_A
+
+    axis = axis_from_rotation_matrix(M[:3, :3])
+
+    v = M[:3, 3:]
+
+    v_along = (axis @ v) * axis.T
+    v_perp = v - v_along
+
+    M_rot = M.copy()
+    M_rot[:3, 3:] = v_perp
+
+    Z = M_rot - np.eye(4)
+    Z[3, :3] = axis
+
+    #
+    centre, _, _, _ = np.linalg.lstsq(Z[:, :3], -Z[:, 3], rcond=None)
+
+    cent_hom = np.hstack((centre, 1)).T
+    assert np.allclose(M_rot @ cent_hom, cent_hom), 'Error in finding centre.'
+
+    angle = angle_from_rotation_matrix(M[:3, :3])
+
+    rot = Rotation(centre, axis, angle)
+
+
+    if not np.allclose(rot.homogeneous_matrix(), M_rot):
+        # Try inverting the axis
+        axis *= -1.0
+        rot = Rotation(centre, axis, angle)
+        assert np.allclose(rot.homogeneous_matrix(), M_rot), 'Error finding rotation.'
+
+    translate_dist = np.sqrt(np.sum(v_along * v_along))
+
+    if np.isclose(translate_dist, 0):
+        # Composition is a rotation.
+        return rot
+
+    # Composition is a screw transformation.
+    screw = Screw(centre, axis, angle, translate_dist)
+
+    if not np.allclose(screw.homogeneous_matrix(), M):
+        # Try inverting the translation
+        translate_dist *= -1.0
+        screw = Screw(centre, axis, angle, translate_dist)
+        assert np.allclose(screw.homogeneous_matrix(), M), 'Error finding screw transform.'
+
+    return screw
 
 def main():
 
