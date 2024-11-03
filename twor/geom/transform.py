@@ -391,9 +391,23 @@ class Rotation3D(Transform):
 
         return
 
+    def followed_by(self, other: Rotation3D):
+        L = self.rot
+        K = other.rot
+        M = L.followed_by(K)
+
+        p = self.point
+        r = other.point
+        u = r - K.apply(r - p) - M.apply(p)
+        trans = Translation3D(u)
+
+        return TransOriginRotation3D.from_transforms(M, trans)
+
+
+
     def to_transrot(self):
         vec = self.point - self.rot.apply(self.point)
-        return TransRotation3D(vec, self.rot.axis, self.rot.angle)
+        return TransOriginRotation3D(vec, self.rot.axis, self.rot.angle)
 
     def apply(self, points):
         pts = validate_pts(points)
@@ -416,7 +430,7 @@ class Rotation3D(Transform):
         ang = np.round(self.rot.angle, 2)
         return f'Rotation3D(\n {c},\n {ax},\n {ang}\n)'
 
-class TransRotation3D(Transform):
+class TransOriginRotation3D(Transform):
     """
     A two-step transformation of the form
     T M : x -> T ( M (x) )
@@ -428,6 +442,13 @@ class TransRotation3D(Transform):
         self.tra = Translation3D(transvector)
 
         return
+
+    @classmethod
+    def from_transforms(cls, originRotation: OriginRotation3D, trans: Translation3D):
+        v = trans.vec
+        ax = originRotation.axis
+        ang = originRotation.angle
+        return cls(v, ax, ang)
 
     def homogeneous_matrix(self):
         M = self.rot.homogeneous_matrix()

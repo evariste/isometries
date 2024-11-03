@@ -1,6 +1,6 @@
 import numpy as np
 from twor.utils.general import random_rotation_3D, ensure_vec
-from twor.geom.transform import Rotation3D, TransRotation3D
+from twor.geom.transform import Rotation3D, TransOriginRotation3D
 
 ax, theta = random_rotation_3D()
 
@@ -14,7 +14,7 @@ M_A = rot_A.homogeneous_matrix()
 
 transf_B = rot_A.to_transrot()
 
-assert isinstance(transf_B, TransRotation3D)
+assert isinstance(transf_B, TransOriginRotation3D)
 
 print(rot_A)
 
