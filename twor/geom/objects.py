@@ -244,11 +244,11 @@ class Glyph2D(object):
         else:
             return Glyph2D(new_points)
 
-    def get_patch(self, facecolor=None, label=None):
+    def get_patch(self, facecolor=None, label=None, **kwargs):
         if facecolor is None:
             facecolor = self.facecolor
 
-        return Polygon(self.points.T, closed=True, facecolor=facecolor, label=label)
+        return Polygon(self.points.T, closed=True, facecolor=facecolor, label=label, **kwargs)
 
     def bounds(self):
         min_vals = np.min(self.points, axis=1)
