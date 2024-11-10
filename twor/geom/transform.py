@@ -384,7 +384,7 @@ class Rotation3D(Transform):
         """
 
         super().__init__()
-        self.rot = OriginRotation3D(axis_dir, angle)
+        self.orig_rot = OriginRotation3D(axis_dir, angle)
         self.point = ensure_vec_3d(point)
         self.T_inv = Translation3D(-1.0 * self.point)
         self.T = Translation3D(self.point)
@@ -392,8 +392,8 @@ class Rotation3D(Transform):
         return
 
     def followed_by(self, other: Rotation3D):
-        L = self.rot
-        K = other.rot
+        L = self.orig_rot
+        K = other.orig_rot
         M = L.followed_by(K)
 
         p = self.point
@@ -401,44 +401,58 @@ class Rotation3D(Transform):
         u = r - K.apply(r - p) - M.apply(p)
         trans = Translation3D(u)
 
-        return TransOriginRotation3D.from_transforms(M, trans)
+        trans_orig_rot = TransOriginRotation3D.from_transforms(M, trans)
+
+        return trans_orig_rot.to_trans_rot()
 
 
 
-    def to_transrot(self):
-        vec = self.point - self.rot.apply(self.point)
-        return TransOriginRotation3D(vec, self.rot.axis, self.rot.angle)
+    def to_trans_origin_rot(self):
+        vec = self.point - self.orig_rot.apply(self.point)
+        return TransOriginRotation3D(vec, self.orig_rot.axis, self.orig_rot.angle)
 
     def apply(self, points):
         pts = validate_pts(points)
         pts = self.T_inv.apply(pts)
-        pts = self.rot.apply(pts)
+        pts = self.orig_rot.apply(pts)
         pts = self.T.apply(pts)
         return pts
 
 
     def homogeneous_matrix(self):
         M_T_inv = self.T_inv.homogeneous_matrix()
-        M_rot = self.rot.homogeneous_matrix()
+        M_rot = self.orig_rot.homogeneous_matrix()
         M_T = self.T.homogeneous_matrix()
 
         return M_T @ M_rot @ M_T_inv
 
     def __repr__(self):
         c = np.round(self.point.flatten(), 2)
-        ax = np.round(self.rot.axis.flatten(), 2)
-        ang = np.round(self.rot.angle, 2)
+        ax = np.round(self.orig_rot.axis.flatten(), 2)
+        ang = np.round(self.orig_rot.angle, 2)
         return f'Rotation3D(\n {c},\n {ax},\n {ang}\n)'
+
+    def is_close(self, other: Rotation3D):
+
+        R = self.orig_rot.homogeneous_matrix()
+        R_other = other.orig_rot.homogeneous_matrix()
+
+        p = self.point
+        p_other = other.point
+
+        return np.allclose(R, R_other) and np.allclose(p, p_other)
 
 class TransOriginRotation3D(Transform):
     """
     A two-step transformation of the form
     T M : x -> T ( M (x) )
-    where M is an origin rotation and T is a translation.
+    where
+     - M is an origin rotation
+     - T is a translation.
     """
     def __init__(self, transvector, axis, angle):
         super().__init__()
-        self.rot = OriginRotation3D(axis, angle)
+        self.origin_rot = OriginRotation3D(axis, angle)
         self.tra = Translation3D(transvector)
 
         return
@@ -450,17 +464,114 @@ class TransOriginRotation3D(Transform):
         ang = originRotation.angle
         return cls(v, ax, ang)
 
+    def to_trans_rot(self):
+
+        v = self.tra.vec
+
+        c = self.origin_rot.axis
+        theta = self.origin_rot.angle
+
+        v_para = c * (c.T @ v)
+        u = v - v_para
+
+        # TODO: what if u is zero vec?
+
+        c_cross_u = cross_product(c, u)
+
+        # TODO what if c x u is zero.
+
+        w = ensure_unit_vec(c_cross_u)
+
+        len_u = np.sqrt(np.sum(u * u))
+
+        OA = len_u / 2.0 / np.tan(theta / 2.0)
+
+        OA_vec = OA * w
+
+        p = OA_vec + u / 2.0
+
+
+        r3d = Rotation3D(p, c, theta)
+
+        tra_new = Translation3D(v_para)
+
+        trans_rot = TransRotation3D.from_transforms(r3d, tra_new)
+
+
+        return trans_rot
+
+
+
     def homogeneous_matrix(self):
-        M = self.rot.homogeneous_matrix()
+        M = self.origin_rot.homogeneous_matrix()
         T = self.tra.homogeneous_matrix()
         return T @ M
 
     def apply(self, points):
-        pts = self.rot.apply(points)
+        pts = self.origin_rot.apply(points)
         pts = self.tra.apply(pts)
         return pts
 
 
     def __repr__(self):
-        strs = ['TransRotation3D', repr(self.rot), repr(self.tra)]
+        strs = ['TransOriginRotation3D', repr(self.origin_rot), repr(self.tra)]
         return '\n'.join(strs)
+
+class TransRotation3D(Transform):
+    """
+    A two-step transformation of the form
+    T M : x -> T ( M (x) )
+
+    where:
+     - M is an general rotation
+     - T is a translation, either zero or parallel to the axis of M.
+    """
+
+
+    def __init__(self, point, axis, angle, transvector):
+        super().__init__()
+
+        self.gen_rot = Rotation3D(point, axis, angle)
+        self.tra = Translation3D(transvector)
+
+        return
+
+    @classmethod
+    def from_transforms(cls, rotation: Rotation3D, trans: Translation3D):
+
+        pt = rotation.point
+        ax = rotation.orig_rot.axis
+        ang = rotation.orig_rot.angle
+        v = trans.vec
+
+        return cls(pt, ax, ang, v)
+
+
+    def apply(self, points):
+        pts = self.gen_rot.apply(points)
+        pts = self.tra.apply(pts)
+        return pts
+
+    def homogeneous_matrix(self):
+        M = self.gen_rot.homogeneous_matrix()
+        T = self.tra.homogeneous_matrix()
+        return T @ M
+
+
+    def is_close(self, other: TransRotation3D):
+
+        r3d = self.gen_rot
+        r3d_other = other.gen_rot
+
+        v = self.tra.vec
+        v_other = other.tra.vec
+
+
+        return r3d.is_close(r3d_other) and np.allclose(v, v_other)
+
+
+
+    def __repr__(self):
+        strs = ['TransRotation3D', repr(self.gen_rot), repr(self.tra)]
+        return '\n'.join(strs)
+
