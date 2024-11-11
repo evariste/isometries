@@ -1,13 +1,20 @@
 from __future__ import annotations
 
+
 """
 Created by: Paul Aljabar
 Date: 08/06/2023
 """
 
 from abc import ABC, abstractmethod
-from twor.geom.objects import *
-from twor.utils.general import rotation_matrix_from_axis_and_angle
+import numpy as np
+from quaternion import quaternion
+from twor.utils.general import (
+    ensure_unit_vec, ensure_vec, validate_pts, wrap_angle_minus_pi_to_pi, rotate_vector, cross_product,
+    angle_between_vectors, vecs_parallel, rotation_matrix_from_axis_and_angle
+)
+from twor.geom.objects import Line2D, Plane3D
+
 
 
 class Transform(ABC):
@@ -36,7 +43,7 @@ class Reflection2D(Transform):
         self.line = line
         self.direction = line.direction
         normal = [-1.0 * line.direction[1], line.direction[0]]
-        self.normal = ensure_unit_vec_2d(normal)
+        self.normal = ensure_unit_vec(normal)
 
 
     def apply(self, points):
@@ -80,7 +87,7 @@ class Rotation2D(Transform):
     def __init__(self, centre, angle):
 
         super().__init__()
-        self.centre = ensure_vec_2d(centre)
+        self.centre = ensure_vec(centre)
         self.angle = wrap_angle_minus_pi_to_pi(angle)
 
         # Set up a pair of reflections that can be used
@@ -182,7 +189,7 @@ class Translation2D(Transform):
     def __init__(self, v):
 
         super().__init__()
-        self.vec = ensure_vec_2d(v)
+        self.vec = ensure_vec(v)
 
     def apply(self, points):
         pts = validate_pts(points)
@@ -203,7 +210,7 @@ class Translation3D(Transform):
     def __init__(self, v):
 
         super().__init__()
-        self.vec = ensure_vec_3d(v)
+        self.vec = ensure_vec(v)
 
     def apply(self, points):
         pts = validate_pts(points)
@@ -281,7 +288,7 @@ class OriginRotation3D(Transform):
 
         super().__init__()
 
-        self.axis = ensure_unit_vec_3d(axis)
+        self.axis = ensure_unit_vec(axis)
         self.angle = wrap_angle_minus_pi_to_pi(angle)
 
         origin = [0, 0, 0]
@@ -290,7 +297,7 @@ class OriginRotation3D(Transform):
         axis_plane = Plane3D(self.axis, origin)
         xy_plane = Plane3D(z_vec,  origin)
 
-        O = ensure_vec_3d([0, 0, 0])
+        O = ensure_vec([0, 0, 0])
 
         if axis_plane.parallel_to(xy_plane):
             u = [1, 0, 0]
@@ -315,6 +322,21 @@ class OriginRotation3D(Transform):
 
         return
 
+
+    def to_quaternion(self):
+        v = self.axis
+        theta = self.angle
+
+        c = float(np.cos(theta / 2.0))
+        s = float(np.sin(theta / 2.0))
+
+        sv = s * v
+        sv = sv.flatten()
+
+        q = quaternion(c, *sv)
+
+        return q
+
     @classmethod
     def from_planes(cls, plane_0: Plane3D, plane_1: Plane3D):
         if plane_0.parallel_to(plane_1):
@@ -338,7 +360,7 @@ class OriginRotation3D(Transform):
                 # Axes are opposing each other.
                 return OriginRotation3D(self.axis, self.angle - other.angle)
 
-        O = ensure_vec_3d([0, 0, 0])
+        O = ensure_vec([0, 0, 0])
         P = 10 * self.axis
         Q = 10 * other.axis
         plane_shared = Plane3D.from_points(O, P, Q)
@@ -385,7 +407,7 @@ class Rotation3D(Transform):
 
         super().__init__()
         self.orig_rot = OriginRotation3D(axis_dir, angle)
-        self.point = ensure_vec_3d(point)
+        self.point = ensure_vec(point)
         self.T_inv = Translation3D(-1.0 * self.point)
         self.T = Translation3D(self.point)
 
