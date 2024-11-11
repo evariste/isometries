@@ -6,7 +6,9 @@ Date: 08/06/2023
 """
 
 import numpy as np
-from twor.utils.general import *
+from twor.utils.general import (
+    ensure_vec, ensure_unit_vec, vecs_parallel, vecs_perpendicular, cross_product, wrap_angle_minus_pi_to_pi
+)
 from twor.utils.vtk import run_triangle_filter
 from twor.io.vtk import make_vtk_polydata, polydata_save
 from matplotlib.patches import Polygon
@@ -17,8 +19,8 @@ class Line3D(object):
 
     def __init__(self, pt, direction):
 
-        self.pt = ensure_vec_3d(pt)
-        self.direction = ensure_unit_vec_3d(direction)
+        self.pt = ensure_vec(pt)
+        self.direction = ensure_unit_vec(direction)
 
         return
 
@@ -27,7 +29,7 @@ class Line3D(object):
 
     def nearest(self, point):
 
-        v = ensure_vec_3d(point)
+        v = ensure_vec(point)
 
         pt_to_v = v - self.pt
 
@@ -41,7 +43,7 @@ class Line3D(object):
         return self.pt + mu * self.direction
 
     def contains_point(self, X):
-        V = ensure_vec_3d(X)
+        V = ensure_vec(X)
 
         if np.allclose(V, self.pt):
             return True
@@ -50,18 +52,18 @@ class Line3D(object):
         return vecs_parallel(u, self.direction)
 
     def set_start_point(self, P):
-        self.pt = ensure_vec_3d(P)
+        self.pt = ensure_vec(P)
 
     def set_direction(self, v):
-        self.direction = ensure_unit_vec_3d(v)
+        self.direction = ensure_unit_vec(v)
 
 
 class Plane3D:
     def __init__(self, normal, pt):
 
-        self.normal = ensure_unit_vec_3d(normal)
+        self.normal = ensure_unit_vec(normal)
 
-        p = ensure_vec_3d(pt)
+        p = ensure_vec(pt)
 
         self.const = np.sum(self.normal * p)
 
@@ -74,9 +76,9 @@ class Plane3D:
 
     @classmethod
     def from_points(cls, O, P, Q):
-        o = ensure_vec_3d(O)
-        p = ensure_vec_3d(P)
-        q = ensure_vec_3d(Q)
+        o = ensure_vec(O)
+        p = ensure_vec(P)
+        q = ensure_vec(Q)
 
         OP = p - o
         OQ = q - o
@@ -84,7 +86,7 @@ class Plane3D:
         if vecs_parallel(OP, OQ):
             raise Exception('Collinear points.')
 
-        n = ensure_unit_vec_3d(cross_product(OP, OQ))
+        n = ensure_unit_vec(cross_product(OP, OQ))
 
         return cls(n, o)
 
@@ -276,8 +278,8 @@ class Line2D:
     parallel_tol_angle = 0.001
 
     def __init__(self, pt, direction):
-        self.point = ensure_vec_2d(pt)
-        self.direction = ensure_unit_vec_2d(direction)
+        self.point = ensure_vec(pt)
+        self.direction = ensure_unit_vec(direction)
         self.perp = [-1.0 * self.direction[1], self.direction[0]]
 
         u, v = self.direction
@@ -306,7 +308,7 @@ class Line2D:
         except:
             x = self.c / self.a
             y = 0
-        return ensure_vec_2d([x, y])
+        return ensure_vec([x, y])
 
     def angle_to(self, other: Line2D):
         return wrap_angle_minus_pi_to_pi(other.theta - self.theta)
@@ -322,7 +324,7 @@ class Line2D:
             [other.a, other.b]
         ])
 
-        consts = ensure_vec_2d([self.c, other.c])
+        consts = ensure_vec([self.c, other.c])
 
         det = M[0, 0] * M[1, 1] - M[0, 1] * M[1, 0]
 
