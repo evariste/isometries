@@ -7,7 +7,8 @@ Date: 08/06/2023
 
 import numpy as np
 from twor.utils.general import (
-    ensure_vec, ensure_unit_vec, vecs_parallel, vecs_perpendicular, cross_product, wrap_angle_minus_pi_to_pi
+    ensure_vec, ensure_unit_vec, vecs_parallel, vecs_perpendicular, cross_product, wrap_angle_minus_pi_to_pi,
+    rotation_matrix_from_axis_and_angle
 )
 from twor.utils.vtk import run_triangle_filter
 from twor.io.vtk import make_vtk_polydata, polydata_save
@@ -344,4 +345,328 @@ class Line2D:
 
 
 
+
+
+class Icosahedron(object):
+
+    def __init__(self, scale=1.0):
+
+        self.n_vertices = 12
+        self.n_edges = 30
+        self.n_faces = 20
+
+        self.vertex_label = 'ABCDEFGHIJKL'
+
+        # For default scale, 1.0, the edge length of the icosahedron is 2.
+        self.scale = scale
+
+        phi = (1 + np.sqrt(5)) / 2
+        mphi = -1.0 * phi
+
+        vertex = np.asarray(
+            [
+                [1, phi, 0],  # 0 A
+                [1, mphi, 0],  # 1 B
+                [-1, phi, 0],  # 2 C
+                [-1, mphi, 0],  # 3 D
+                [phi, 0, 1],  # 4 E
+                [mphi, 0, 1],  # 5 F
+                [phi, 0, -1],  # 6 G
+                [mphi, 0, -1],  # 7 H
+                [0, 1, phi],  # 8 I
+                [0, 1, mphi],  # 9 J
+                [0, -1, phi],  # 10 K
+                [0, -1, mphi]  # 11 L
+            ]
+        )
+
+        self.vertex_coord = vertex * scale
+
+        # Index of vertex opposite
+        #                   0  1  2  3  4  5  6  7   8   9 10 11
+        self.v_index_opp = [3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8]
+
+        # Anti-clockwise viewed from outside.
+        face_label = ['ACI', 'CFI', 'FKI', 'FDK', 'KDB', 'BEK', 'EIK', 'EAI',  # Above xy plane
+                      'AEG', 'BGE', 'CHF', 'HDF',  # Cross xy plane
+                      'AJC', 'CJH', 'HJL', 'DHL', 'DLB', 'BLG', 'GLJ', 'AGJ']  # Below xy plane
+
+        self.face_label = face_label
+
+        self.edge_label = self.init_edge_label()
+
+        # Each face is [v0, v1, v2], indices of vertices - order as above.
+        self.face = self.init_face_index()
+
+        # Each edge is [v0, v1], indices of vertices with v0 < v1
+        self.edge = self.init_edge_index()
+
+        # List of six pairs of opposite vertices (by their index in the vertex arrays).
+        self.opp_vertices = self.init_opposite_vertices()
+
+        # List of fifteen pairs of opposite edges (by their index into the edge array).
+        self.opp_edges = self.init_opposite_edges()
+
+        # List of ten pairs of opposite faces (by their index into the face array).
+        self.opp_faces = self.init_opposite_faces()
+
+        self.face_centroid = self.init_face_centroids()
+
+        self.edge_midpoint = self.init_edge_midpoints()
+
+        return
+
+    def init_edge_midpoints(self):
+        edge_midpoint = []
+        for e in self.edge:
+            idx_v0, idx_v1 = e
+            v0 = self.vertex_coord[idx_v0]
+            v1 = self.vertex_coord[idx_v1]
+            midpt = (v0 + v1) / 2.0
+            edge_midpoint.append(midpt)
+
+        return np.asarray(edge_midpoint)
+
+    def init_face_centroids(self):
+        face_centroid = []
+        for f in self.face:
+            idx_v0, idx_v1, idx_v2 = f
+            v0 = self.vertex_coord[idx_v0]
+            v1 = self.vertex_coord[idx_v1]
+            v2 = self.vertex_coord[idx_v2]
+            centroid = (v0 + v1 + v2) / 3.0
+            face_centroid.append(centroid)
+
+        return np.asarray(face_centroid)
+
+    def generate_rotations(self):
+        yield np.eye(3)
+        yield from self.gen_face_rotations()
+        yield from self.gen_edge_rotations()
+        yield from self.gen_vertex_rotations()
+
+
+    def gen_vertex_rotations(self):
+        theta_1 = 2.0 * np.pi / 5.0
+        angles = [n * theta_1 for n in [1.0, 2.0, 3.0, 4.0]]
+
+        for k, k_opp in self.opp_vertices:
+            v = self.vertex_coord[k]
+            v_opp = self.vertex_coord[k_opp]
+            axis = v_opp - v
+
+            for theta in angles:
+                M = rotation_matrix_from_axis_and_angle(axis, theta)
+                yield M
+
+    def gen_edge_rotations(self):
+
+        for e0, _ in self.opp_edges:
+            idx_v0, idx_w0 = self.edge[e0]
+            v0 = self.vertex_coord[idx_v0]
+            w0 = self.vertex_coord[idx_w0]
+            axis = w0 - v0
+
+            M = rotation_matrix_from_axis_and_angle(axis, np.pi)
+            yield M
+
+    def gen_face_rotations(self):
+        theta1 = 2.0 * np.pi / 3.0
+        angles = [theta1, 2.0 * theta1]
+        for f0, f1 in self.opp_faces:
+
+            centroid0 = self.face_centroid[f0]
+            centroid1 = self.face_centroid[f1]
+            axis = centroid1 - centroid0
+
+            for theta in angles:
+                M = rotation_matrix_from_axis_and_angle(axis, theta)
+                yield M
+
+    def init_opposite_vertices(self):
+        opp_vertices = []
+        for k in range(self.n_vertices):
+
+            k_opp = self.opp_vertex_index(k)
+
+            opp_pair = [k, k_opp]
+            if k > k_opp:
+                opp_pair = [k_opp, k]
+
+            if opp_pair in opp_vertices:
+                continue
+
+            opp_vertices.append(opp_pair)
+
+        return opp_vertices
+
+    def init_opposite_edges(self):
+        opp_edges = []
+        for k in range(self.n_edges):
+            k_opp = self.opp_edge_index(k)
+
+            opp_pair = [k, k_opp]
+            if k > k_opp:
+                opp_pair = [k_opp, k]
+
+            if opp_pair in opp_edges:
+                continue
+
+            opp_edges.append(opp_pair)
+
+        return opp_edges
+
+    def init_opposite_faces(self):
+
+        opp_faces = []
+
+        for k in range(self.n_faces):
+            k_opp = self.opp_face_index(k)
+
+            opp_pair = [k, k_opp]
+            if k > k_opp:
+                opp_pair = [k_opp, k]
+
+            if opp_pair in opp_faces:
+                continue
+
+            opp_faces.append(opp_pair)
+
+        return opp_faces
+
+
+    def init_edge_label(self):
+        edge_label = []
+        for face_l in self.face_label:
+            # This will double count the edges:
+            v0, v1, v2 = face_l
+            e1 = sorted([v0, v1])
+            e2 = sorted([v1, v2])
+            e3 = sorted([v2, v0])
+            edge_label += [''.join(e) for e in [e1, e2, e3]]
+
+        # Fix double counting.
+        return list(set(edge_label))
+
+    def init_face_index(self):
+        face_index = []
+
+        for face_l in self.face_label:
+            # Store each face's vertex indices.
+            v0_l, v1_l, v2_l = face_l
+            v0_idx = self.vertex_label.index(v0_l)
+            v1_idx = self.vertex_label.index(v1_l)
+            v2_idx = self.vertex_label.index(v2_l)
+            face_index.append([v0_idx, v1_idx, v2_idx])
+
+        return np.asarray(face_index, dtype='int')
+
+    def init_edge_index(self):
+        edge_index = []
+
+        for v1_label, v2_label in self.edge_label:
+            v1_idx = self.vertex_label.index(v1_label)
+            v2_idx = self.vertex_label.index(v2_label)
+            edge_index.append([v1_idx, v2_idx])
+
+        return edge_index
+
+    def to_vtk_polydata(self):
+
+        pd = make_vtk_polydata(self.vertex_coord, self.face)
+        return pd
+
+    def save_as_vtk_polydata(self, file_name, clobber=True):
+
+        pd = self.to_vtk_polydata()
+        polydata_save(pd, file_name, clobber=clobber)
+        return
+
+    def opp_vertex_index(self, v_index):
+        assert -1 < v_index < 12, 'Index out of range.'
+        return self.v_index_opp[v_index]
+
+    def opp_vertex_label(self, v_label):
+        assert v_label in self.vertex_label, 'Invalid vertex label.'
+        v_idx = self.vertex_label.index(v_label)
+        v_idx_opp = self.opp_vertex_index(v_idx)
+        v_label_opp = self.vertex_label[v_idx_opp]
+        return v_label_opp
+
+    def opp_edge_index(self, e_index):
+        assert -1 < e_index < self.n_edges, 'Invalid edge index'
+
+        v0, v1 = self.edge[e_index]
+        v0_opp = self.opp_vertex_index(v0)
+        v1_opp = self.opp_vertex_index(v1)
+        if v0_opp > v1_opp:
+            v0_opp, v1_opp = v1_opp, v0_opp
+        e_opp = [v0_opp, v1_opp]
+        return self.edge.index(e_opp)
+
+    def opp_edge_label(self, e_label):
+        assert len(e_label) == 2, 'Invalid edge label.'
+
+        v0_label, v1_label = e_label
+
+        assert v0_label in self.vertex_label, 'Invalid vertex label.'
+        assert v1_label in self.vertex_label, 'Invalid vertex label.'
+
+        # Edges are are written alphabetically.
+        if v0_label > v1_label:
+            e_label = f'{v1_label}{v0_label}'
+
+        assert e_label in self.edge_label, 'Edge does not exist.'
+
+        e_index = self.edge_label.index(e_label)
+
+        e_idx_opp = self.opp_edge_index(e_index)
+
+        return self.edge_label[e_idx_opp]
+
+    def opp_face_index(self, f_index):
+
+        assert -1 < f_index < self.n_faces, 'Invalid face index'
+
+        v0, v1, v2 = self.face[f_index]
+
+        v0_opp = self.opp_vertex_index(v0)
+        v1_opp = self.opp_vertex_index(v1)
+        v2_opp = self.opp_vertex_index(v2)
+
+        f_opp_vs_sort = sorted([v0_opp, v1_opp, v2_opp])
+
+        all_f_vs_sort = [sorted(vs) for vs in self.face]
+
+        assert f_opp_vs_sort in all_f_vs_sort, 'Cannot find opposing face index.'
+
+        return all_f_vs_sort.index(f_opp_vs_sort)
+
+    def opp_face_label(self, f_label):
+        assert self.face_with_vertex_labels_exists(f_label), 'No face with given vertex labels.'
+        f_label = self.standardise_face_label(f_label)
+
+        f_idx = self.face_label.index(f_label)
+        f_idx_opp = self.opp_face_index(f_idx)
+        return self.face_label[f_idx_opp]
+
+    def face_with_vertex_labels_exists(self, face_label):
+        """
+        Check a face exists with the three vertices given in the face label.
+        They might not be specified in the right order.
+        """
+        vs_sort = sorted(face_label)
+        all_vs_sort = [sorted(vs) for vs in self.face_label]
+        return vs_sort in all_vs_sort
+
+    def standardise_face_label(self, face_label):
+        """
+        Given a triplet of vertices for a face, find the representation
+        listed in standard form.
+        """
+        assert self.face_with_vertex_labels_exists(face_label)
+        vs_sort = sorted(face_label)
+        all_vs_sort = [sorted(vs) for vs in self.face_label]
+        f_idx = all_vs_sort.index(vs_sort)
+        return self.face_label[f_idx]
 
