@@ -4,6 +4,8 @@ Date: 08/06/2023
 """
 
 import numpy as np
+from functools import cmp_to_key
+EPS = np.finfo(np.float32).eps
 
 
 def cross_product(x, y):
@@ -550,4 +552,46 @@ def random_rotation_matrix_3D():
     R = np.hstack([u0, u1, u2])
 
     return R
+
+def cmp_vecs(v, w):
+    """
+    Compare to 1-D vectors, for use when sorting them.
+    """
+    assert v.ndim == 1, 'Meant for 1D arrays.'
+    assert v.shape == w.shape, 'Vector mismatch.'
+
+    v_minus_w = v - w
+    v_minus_w[np.abs(v_minus_w) < EPS] = 0
+
+    s = np.sign(v_minus_w)
+
+    v_dim = v.size
+    k = 0
+    while (k < v_dim) and (s[k] == 0):
+        k += 1
+    if k == v_dim:
+        return 0
+
+    return int(s[k])
+
+def lex_sort_ndarray(v, axis=0):
+    """
+    Sort a 2D array of vectors lexographically.
+    """
+
+    assert v.ndim == 2, 'Meant for 2D arrays.'
+    assert axis in [0, 1], 'Invalid axis.'
+
+    vv = v.copy()
+
+    if axis == 1:
+        vv = vv.T
+
+    vv = sorted(vv, key=cmp_to_key( cmp_vecs) )
+    vv = np.asarray(vv)
+
+    if axis == 1:
+        vv = vv.T
+
+    return vv
 
