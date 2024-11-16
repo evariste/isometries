@@ -556,6 +556,10 @@ def random_rotation_matrix_3D():
 def cmp_vecs(v, w):
     """
     Compare to 1-D vectors, for use when sorting them.
+    Returns:
+        v > w : 1
+        v = w : 0
+        v < w : -1
     """
     assert v.ndim == 1, 'Meant for 1D arrays.'
     assert v.shape == w.shape, 'Vector mismatch.'
