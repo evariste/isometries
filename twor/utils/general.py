@@ -555,32 +555,38 @@ def random_rotation_matrix_3D():
 
 def cmp_vecs(v, w):
     """
-    Compare to 1-D vectors, for use when sorting them.
+    Compare two 1-D vectors of the same size,
+    for use when sorting them lexographically.
+
     Returns:
-        v > w : 1
-        v = w : 0
+        v > w :  1
+        v = w :  0
         v < w : -1
     """
-    assert v.ndim == 1, 'Meant for 1D arrays.'
+    assert v.ndim == 1, 'Meant for 1D vectors.'
     assert v.shape == w.shape, 'Vector mismatch.'
 
     v_minus_w = v - w
-    v_minus_w[np.abs(v_minus_w) < EPS] = 0
+    v_minus_w[np.isclose(v, w)] = 0
 
     s = np.sign(v_minus_w)
 
     v_dim = v.size
     k = 0
+
     while (k < v_dim) and (s[k] == 0):
         k += 1
+
     if k == v_dim:
         return 0
 
     return int(s[k])
 
-def lex_sort_ndarray(v, axis=0):
+def lex_sort_2darray(v, axis=0):
     """
     Sort a 2D array of vectors lexographically.
+    axis=0, sort rows
+    axis=1, sort columns.
     """
 
     assert v.ndim == 2, 'Meant for 2D arrays.'
@@ -591,7 +597,7 @@ def lex_sort_ndarray(v, axis=0):
     if axis == 1:
         vv = vv.T
 
-    vv = sorted(vv, key=cmp_to_key( cmp_vecs) )
+    vv = sorted(vv, key=cmp_to_key(cmp_vecs) )
     vv = np.asarray(vv)
 
     if axis == 1:
