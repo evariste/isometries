@@ -330,8 +330,8 @@ class OriginRotation3D(Transform):
         c = float(np.cos(theta / 2.0))
         s = float(np.sin(theta / 2.0))
 
-        sv = s * v
-        sv = sv.flatten()
+        # sin(t / 2) v
+        sv = s * v.flatten()
 
         q = quaternion(c, *sv)
 
