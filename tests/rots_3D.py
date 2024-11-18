@@ -8,7 +8,7 @@ P = ensure_vec(P)
 
 rot_A = Rotation3D(P, ax, theta)
 
-M_A = rot_A.homogeneous_matrix()
+M_A = rot_A.get_matrix()
 
 print(rot_A)
 
@@ -18,8 +18,8 @@ Q = rot_B.apply(P)
 
 trans = Translation3D(P - Q)
 
-M_trans = trans.homogeneous_matrix()
-M_B = rot_B.homogeneous_matrix()
+M_trans = trans.get_matrix()
+M_B = rot_B.get_matrix()
 
 M_C = M_trans @ M_B
 
@@ -42,10 +42,10 @@ rot_D = Rotation3D(Q, ax, alpha)
 
 transf_E = rot_C.followed_by(rot_D)
 
-M_C = rot_C.homogeneous_matrix()
-M_D = rot_D.homogeneous_matrix()
+M_C = rot_C.get_matrix()
+M_D = rot_D.get_matrix()
 
-M_E = transf_E.homogeneous_matrix()
+M_E = transf_E.get_matrix()
 
 success = np.allclose(M_D @ M_C, M_E)
 assert success
@@ -68,10 +68,10 @@ rot_D = Rotation3D(Q, ax2, alpha)
 
 transf_E = rot_C.followed_by(rot_D)
 
-M_C = rot_C.homogeneous_matrix()
-M_D = rot_D.homogeneous_matrix()
+M_C = rot_C.get_matrix()
+M_D = rot_D.get_matrix()
 
-M_E = transf_E.homogeneous_matrix()
+M_E = transf_E.get_matrix()
 
 success = np.allclose(M_D @ M_C, M_E)
 assert success

@@ -32,7 +32,7 @@ class Translation(Transform):
 
         return pts_out
 
-    def homogeneous_matrix(self):
+    def get_matrix(self):
         M = np.eye(4)
         # [I v]
         # [0 1]
@@ -70,7 +70,7 @@ class Rotation(Transform):
 
         return pts_out
 
-    def homogeneous_matrix(self):
+    def get_matrix(self):
         M = np.eye(4)
 
         # [I t] [R 0] [I -t]
@@ -106,9 +106,9 @@ class Screw(Transform):
         self.tra = Translation(self.rot.axis * translate_dist)
         return
 
-    def homogeneous_matrix(self):
-        M1 = self.rot.homogeneous_matrix()
-        M2 =self.tra.homogeneous_matrix()
+    def get_matrix(self):
+        M1 = self.rot.get_matrix()
+        M2 =self.tra.get_matrix()
         return M2 @ M1
 
 
@@ -128,8 +128,8 @@ def compose_rotatations(rot_A, rot_B):
 
     """
 
-    M_A = rot_A.homogeneous_matrix()
-    M_B = rot_B.homogeneous_matrix()
+    M_A = rot_A.get_matrix()
+    M_B = rot_B.get_matrix()
     M = M_B @ M_A
 
     axis = axis_from_rotation_matrix(M[:3, :3])
@@ -156,11 +156,11 @@ def compose_rotatations(rot_A, rot_B):
     rot = Rotation(centre, axis, angle)
 
 
-    if not np.allclose(rot.homogeneous_matrix(), M_rot):
+    if not np.allclose(rot.get_matrix(), M_rot):
         # Try inverting the axis
         axis *= -1.0
         rot = Rotation(centre, axis, angle)
-        assert np.allclose(rot.homogeneous_matrix(), M_rot), 'Error finding rotation.'
+        assert np.allclose(rot.get_matrix(), M_rot), 'Error finding rotation.'
 
     translate_dist = np.sqrt(np.sum(v_along * v_along))
 
@@ -171,11 +171,11 @@ def compose_rotatations(rot_A, rot_B):
     # Composition is a screw transformation.
     screw = Screw(centre, axis, angle, translate_dist)
 
-    if not np.allclose(screw.homogeneous_matrix(), M):
+    if not np.allclose(screw.get_matrix(), M):
         # Try inverting the translation
         translate_dist *= -1.0
         screw = Screw(centre, axis, angle, translate_dist)
-        assert np.allclose(screw.homogeneous_matrix(), M), 'Error finding screw transform.'
+        assert np.allclose(screw.get_matrix(), M), 'Error finding screw transform.'
 
     return screw
 

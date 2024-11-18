@@ -19,10 +19,10 @@ A_then_B = rot_A.followed_by(rot_B)
 
 
 
-M_A = rot_A.homogeneous_matrix()
-M_B = rot_B.homogeneous_matrix()
+M_A = rot_A.get_matrix()
+M_B = rot_B.get_matrix()
 
-M_C = A_then_B.homogeneous_matrix()
+M_C = A_then_B.get_matrix()
 
 assert np.allclose(M_B @ M_A, M_C)
 

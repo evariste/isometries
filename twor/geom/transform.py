@@ -26,7 +26,7 @@ class Transform(ABC):
         Apply to some points and return result.
         """
     @abstractmethod
-    def homogeneous_matrix(self):
+    def get_matrix(self):
         """
         Return a homogeneous 4x4 matrix for a transform.
         """
@@ -62,13 +62,13 @@ class Reflection2D(Transform):
 
         return points_out
 
-    def homogeneous_matrix(self,):
+    def get_matrix(self, ):
         P = self.line.get_point_on_line()
         O_line = Line2D([0, 0], self.direction)
         O_refl = Reflection2D(O_line)
 
-        T_inv = Translation2D(-1.0 * P).homogeneous_matrix()
-        T = Translation2D(P).homogeneous_matrix()
+        T_inv = Translation2D(-1.0 * P).get_matrix()
+        T = Translation2D(P).get_matrix()
 
         M = np.eye(3)
 
@@ -165,7 +165,7 @@ class Rotation2D(Transform):
         return Rotation2D.from_lines(l, n)
 
 
-    def homogeneous_matrix(self):
+    def get_matrix(self):
         M = np.eye(3)
         c = np.cos(self.angle)
         s = np.sin(self.angle)
@@ -173,8 +173,8 @@ class Rotation2D(Transform):
             [c, -1.0 * s],
             [s, c]
         ])
-        T_inv = Translation2D(-1.0 * self.centre).homogeneous_matrix()
-        T = Translation2D(self.centre).homogeneous_matrix()
+        T_inv = Translation2D(-1.0 * self.centre).get_matrix()
+        T = Translation2D(self.centre).get_matrix()
 
         M[:2, :2] = R
 
@@ -195,7 +195,7 @@ class Translation2D(Transform):
         pts = validate_pts(points)
         return pts + self.vec
 
-    def homogeneous_matrix(self):
+    def get_matrix(self):
         T = np.eye(3)
         T[:2, -1] = np.squeeze(self.vec)
         return T
@@ -216,7 +216,7 @@ class Translation3D(Transform):
         pts = validate_pts(points)
         return pts + self.vec
 
-    def homogeneous_matrix(self):
+    def get_matrix(self):
         T = np.eye(4)
         T[:3, -1] = np.squeeze(self.vec)
         return T
@@ -255,13 +255,13 @@ class Reflection3D(Transform):
 
 
 
-    def homogeneous_matrix(self):
+    def get_matrix(self):
 
         pt = self.plane.pt
         n = self.plane.normal
 
-        T_inv = Translation3D(-1.0 * pt).homogeneous_matrix()
-        T = Translation3D(pt).homogeneous_matrix()
+        T_inv = Translation3D(-1.0 * pt).get_matrix()
+        T = Translation3D(pt).get_matrix()
 
         M = np.eye(4)
 
@@ -375,15 +375,15 @@ class OriginRotation3D(Transform):
 
         return OriginRotation3D.from_planes(plane_0, plane_1)
 
-    def homogeneous_matrix(self):
+    def get_matrix(self):
         """
         Get a homogeneous matrix from the composed reflections.
         """
-        M0 = self.refl_0.homogeneous_matrix()
-        M1 = self.refl_1.homogeneous_matrix()
+        M0 = self.refl_0.get_matrix()
+        M1 = self.refl_1.get_matrix()
         return M1 @ M0
 
-    def homogeneous_matrix_B(self):
+    def get_matrix_B(self):
         """
         Get a homogeneous matrix via an external function.
         """
@@ -447,10 +447,10 @@ class Rotation3D(Transform):
         return pts
 
 
-    def homogeneous_matrix(self):
-        M_T_inv = self.T_inv.homogeneous_matrix()
-        M_rot = self.orig_rot.homogeneous_matrix()
-        M_T = self.T.homogeneous_matrix()
+    def get_matrix(self):
+        M_T_inv = self.T_inv.get_matrix()
+        M_rot = self.orig_rot.get_matrix()
+        M_T = self.T.get_matrix()
 
         return M_T @ M_rot @ M_T_inv
 
@@ -462,8 +462,8 @@ class Rotation3D(Transform):
 
     def is_close(self, other: Rotation3D):
 
-        R = self.orig_rot.homogeneous_matrix()
-        R_other = other.orig_rot.homogeneous_matrix()
+        R = self.orig_rot.get_matrix()
+        R_other = other.orig_rot.get_matrix()
 
         p = self.point
         p_other = other.point
@@ -530,9 +530,9 @@ class TransOriginRotation3D(Transform):
 
 
 
-    def homogeneous_matrix(self):
-        M = self.origin_rot.homogeneous_matrix()
-        T = self.tra.homogeneous_matrix()
+    def get_matrix(self):
+        M = self.origin_rot.get_matrix()
+        T = self.tra.get_matrix()
         return T @ M
 
     def apply(self, points):
@@ -580,9 +580,9 @@ class TransRotation3D(Transform):
         pts = self.tra.apply(pts)
         return pts
 
-    def homogeneous_matrix(self):
-        M = self.gen_rot.homogeneous_matrix()
-        T = self.tra.homogeneous_matrix()
+    def get_matrix(self):
+        M = self.gen_rot.get_matrix()
+        T = self.tra.get_matrix()
         return T @ M
 
 

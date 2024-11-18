@@ -15,7 +15,7 @@ refl = Reflection2D(l)
 glyph = Glyph2D()
 glyph_refl =  glyph.apply_transformation(refl)
 
-M = refl.homogeneous_matrix()
+M = refl.get_matrix()
 
 pts_v2 = apply_hom_matrix_to_points(M,  glyph.points)
 
