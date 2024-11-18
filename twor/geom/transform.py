@@ -376,11 +376,17 @@ class OriginRotation3D(Transform):
         return OriginRotation3D.from_planes(plane_0, plane_1)
 
     def homogeneous_matrix(self):
+        """
+        Get a homogeneous matrix from the composed reflections.
+        """
         M0 = self.refl_0.homogeneous_matrix()
         M1 = self.refl_1.homogeneous_matrix()
         return M1 @ M0
 
     def homogeneous_matrix_B(self):
+        """
+        Get a homogeneous matrix via an external function.
+        """
         R = rotation_matrix_from_axis_and_angle(self.axis, self.angle)
         M = np.eye(4)
         M[:3, :3] = R
