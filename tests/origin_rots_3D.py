@@ -1,4 +1,6 @@
 import numpy as np
+
+from tests.rots_3D import success
 from twor.utils.general import random_rotation_3D, cross_product, vecs_parallel
 from twor.geom.transform import OriginRotation3D
 
@@ -21,6 +23,7 @@ M_C = rot_C.get_matrix()
 
 assert np.allclose(M_C, M_B @ M_A)
 
+# Check alternative matrices match.
 
 M_A2 = rot_A.get_matrix_B()
 M_B2 = rot_B.get_matrix_B()
@@ -28,25 +31,19 @@ M_B2 = rot_B.get_matrix_B()
 assert np.allclose(M_A, M_A2)
 assert np.allclose(M_B, M_B2)
 
-
+# Compose via quaternions.
 
 q_A = rot_A.to_quaternion()
 q_B = rot_B.to_quaternion()
 
 q_C = rot_C.to_quaternion()
 
-v = q_C.imag
-s = np.sqrt(np.sum(v * v))
-
-c = q_C.real
-
-q_theta = np.arctan2(s, c)
-
 q_B_q_A = q_B * q_A
 
-success = np.isclose(q_B_q_A, q_C) or np.isclose(-1.0 * q_B_q_A, q_C)
-
-assert success
+if q_B_q_A.real < 0:
+    print('Flip quaternion so that real part is positive (-pi <= theta <= pi).')
+    q_B_q_A *= -1.0
+assert np.isclose(q_B_q_A, q_C)
 
 # Calculating the axis of a composition manually.
 
