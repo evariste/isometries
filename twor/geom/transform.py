@@ -28,10 +28,21 @@ class Transform(ABC):
     @abstractmethod
     def get_matrix(self):
         """
-        Return a homogeneous 4x4 matrix for a transform.
+        Return a homogeneous matrix for a transform.
         """
 
 
+class Identity(Transform):
+    def __init__(self, dimension):
+        super().__init__()
+        self.dim = dimension
+        self.matrix = np.eye(1 + self.dim)
+
+    def apply(self, points):
+        return validate_pts(points)
+
+    def get_matrix(self):
+        return self.matrix
 
 
 class Reflection2D(Transform):
@@ -71,8 +82,6 @@ class Reflection2D(Transform):
         T = Translation2D(P).get_matrix()
 
         M = np.eye(3)
-
-
         M[:2, :2] = O_refl.apply(np.eye(2))
 
         return T @ M @ T_inv
@@ -81,6 +90,8 @@ class Reflection2D(Transform):
         pt = np.round(self.line.point.flatten(), 2)
         direction = np.round(self.line.direction.flatten(), 2)
         return f'Reflection2D(\n {pt},\n {direction}\n)'
+
+
 class Rotation2D(Transform):
 
 
@@ -184,6 +195,8 @@ class Rotation2D(Transform):
         centre = np.round(self.centre.flatten(), 2)
         angle = np.round(self.angle, 2)
         return f'Rotation2D(\n {centre},\n {angle}\n)'
+
+
 class Translation2D(Transform):
 
     def __init__(self, v):
