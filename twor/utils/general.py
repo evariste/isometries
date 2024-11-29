@@ -487,6 +487,9 @@ def matrix2params_affine_3D(matrix):
 
 
 def random_rotation_3D():
+    """
+    Get the axis and angle for a random rotation.
+    """
     R = random_rotation_matrix_3D()
     axis = axis_from_rotation_matrix(R)
     angle = angle_from_rotation_matrix(R)
