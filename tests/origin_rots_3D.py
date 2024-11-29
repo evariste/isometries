@@ -1,6 +1,5 @@
 import numpy as np
 
-from tests.rots_3D import success
 from twor.utils.general import random_rotation_3D, cross_product, vecs_parallel
 from twor.geom.transform import OriginRotation3D
 
