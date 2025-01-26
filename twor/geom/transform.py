@@ -44,7 +44,13 @@ class Identity(Transform):
     def get_matrix(self):
         return self.matrix
 
-class OrthoReflection2D(Transform):
+class OrthoTransform2D(Transform, ABC):
+    pass
+
+class Transform2D(Transform, ABC):
+    pass
+
+class OrthoReflection2D(OrthoTransform2D):
     """
     Orthogonal (linear) reflection in 2-D.
     """
@@ -80,7 +86,7 @@ class OrthoReflection2D(Transform):
         line_2 = Line2D((0, 0), other.direction)
         return OrthoRotation2D.from_lines(line_1, line_2)
 
-class Reflection2D(Transform):
+class Reflection2D(Transform2D):
     """
     Reflection in 2-D.
     """
@@ -129,7 +135,7 @@ class Reflection2D(Transform):
         direction = np.round(self.line.direction.flatten(), 2)
         return f'Reflection2D(\n {pt},\n {direction}\n)'
 
-class OrthoRotation2D(Transform):
+class OrthoRotation2D(OrthoTransform2D):
 
     def __init__(self, angle):
 
@@ -189,7 +195,7 @@ class OrthoRotation2D(Transform):
         return M
 
 
-class Rotation2D(Transform):
+class Rotation2D(Transform2D):
 
 
     def __init__(self, centre, angle):
