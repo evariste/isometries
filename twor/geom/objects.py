@@ -343,6 +343,17 @@ class Line2D:
         return xy
 
 
+    def nearest_point_on_line_to(self, other):
+        """
+        Get a point on this line that is closest to the give one.
+        """
+        p_other = ensure_vec(other)
+
+        line_other = Line2D(p_other, self.perp)
+
+        pt = self.intersection(line_other)
+
+        return pt
 
 
 
@@ -669,4 +680,33 @@ class Icosahedron(object):
         all_vs_sort = [sorted(vs) for vs in self.face_label]
         f_idx = all_vs_sort.index(vs_sort)
         return self.face_label[f_idx]
+
+
+class PointList(object):
+
+    def __init__(self, points=None):
+
+        if points is None:
+            self.points = []
+            return
+
+        for p in points:
+            self.append_point(p)
+
+        return
+
+    def append_point(self, q):
+        q = ensure_vec(q)
+        ix = np.argwhere([np.allclose(p, q) for p in self.points]).flatten()
+        if len(ix) < 1:
+            ix = len(self.points)
+            self.points.append(q)
+            return ix
+
+        assert len(ix) == 1
+        return int(ix[0])
+
+
+
+
 
