@@ -8,14 +8,19 @@ from twor.utils.plotting import set_axis_glyph_bounds
 P = np.random.rand(2) * 10
 v = np.random.rand(2)
 
-l = Line2D(P, v)
+Q = np.random.rand(2) * 10
+u = np.random.rand(2)
 
-refl = Reflection2D(l)
+line_1 = Line2D(P, v)
+line_2 = Line2D(Q, u)
+
+refl_1 = Reflection2D(line_1)
+refl_2 = Reflection2D(line_2)
 
 glyph = Glyph2D()
-glyph_refl =  glyph.apply_transformation(refl)
+glyph_refl =  glyph.apply_transformation(refl_1)
 
-M = refl.get_matrix()
+M = refl_1.get_matrix()
 
 pts_v2 = apply_hom_matrix_to_points(M,  glyph.points)
 
@@ -32,8 +37,8 @@ for p in [patch1, patch2]:
 
 xy0, xy1 = set_axis_glyph_bounds(ax, [glyph, glyph_refl])
 
-f_x0 = l.f_x(xy0)
-f_x1 = l.f_x(xy1)
+f_x0 = line_1.f_x(xy0)
+f_x1 = line_1.f_x(xy1)
 
 ax.plot([xy0, xy1], [f_x0, f_x1], 'k:', linewidth=1)
 
