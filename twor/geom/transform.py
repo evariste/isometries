@@ -44,8 +44,46 @@ class Identity(Transform):
     def get_matrix(self):
         return self.matrix
 
+class OrthoReflection2D(Transform):
+    """
+    Orthogonal (linear) reflection in 2-D.
+    """
+    def __init__(self, direction):
+
+        super().__init__()
+        self.direction = ensure_unit_vec(direction)
+        normal = [-1.0 * self.direction[1], self.direction[0]]
+        self.normal = ensure_unit_vec(normal)
+
+        return
+
+    def apply(self, points):
+
+        points_out = validate_pts(points)
+
+        comp_along = self.direction @ (self.direction.T @ points_out)
+        comp_perp = points_out - comp_along
+
+        points_out = comp_along - comp_perp
+
+        return points_out
+
+    def get_matrix(self, ):
+
+        M = np.eye(3)
+        M[:2, :2] = self.apply(np.eye(2))
+
+        return M
+
+    def followed_by(self, other: OrthoReflection2D):
+        line_1 = Line2D((0, 0), self.direction)
+        line_2 = Line2D((0, 0), other.direction)
+        return OrthoRotation2D.from_lines(line_1, line_2)
 
 class Reflection2D(Transform):
+    """
+    Reflection in 2-D.
+    """
 
     def __init__(self, line: Line2D):
 
@@ -53,43 +91,102 @@ class Reflection2D(Transform):
 
         self.line = line
         self.direction = line.direction
-        normal = [-1.0 * line.direction[1], line.direction[0]]
-        self.normal = ensure_unit_vec(normal)
+        self.ortho_reflection = OrthoReflection2D(self.direction)
+        self.pt = line.nearest_point_on_line_to([0, 0])
 
+        return
 
     def apply(self, points):
 
         points_out = validate_pts(points)
 
-        points_out = points_out - self.line.point
+        points_out = points_out - self.pt
 
-        comp1 = self.direction.T @ points_out
-        comp1 = self.direction @ comp1
-        comp2 = points_out - comp1
+        points_out = self.ortho_reflection.apply(points_out)
 
-        points_out = comp1 - comp2
-
-        points_out = points_out + self.line.point
+        points_out = points_out + self.pt
 
         return points_out
 
+    def followed_by(self, other: Reflection2D):
+        line_1 = self.line
+        line_2 = other.line
+        return Rotation2D.from_lines(line_1, line_2)
+
+
     def get_matrix(self, ):
-        P = self.line.get_point_on_line()
-        O_line = Line2D([0, 0], self.direction)
-        O_refl = Reflection2D(O_line)
 
-        T_inv = Translation2D(-1.0 * P).get_matrix()
+        P = self.pt
+
         T = Translation2D(P).get_matrix()
-
-        M = np.eye(3)
-        M[:2, :2] = O_refl.apply(np.eye(2))
+        M = self.ortho_reflection.get_matrix()
+        T_inv = Translation2D(-1.0 * P).get_matrix()
 
         return T @ M @ T_inv
 
     def __repr__(self):
-        pt = np.round(self.line.point.flatten(), 2)
+        pt = np.round(self.pt.flatten(), 2)
         direction = np.round(self.line.direction.flatten(), 2)
         return f'Reflection2D(\n {pt},\n {direction}\n)'
+
+class OrthoRotation2D(Transform):
+
+    def __init__(self, angle):
+
+        super().__init__()
+
+        self.angle = wrap_angle_minus_pi_to_pi(angle)
+
+        # Set up a pair of reflections that can be used
+        # to execute this rotation.
+        half_angle = self.angle / 2.0
+        O = [0, 0]
+
+        line_1 = Line2D(O, [1, 0])
+        line_2 = Line2D(O, [np.cos(half_angle), np.sin(half_angle)])
+
+        self.ref_1 = Reflection2D(line_1)
+        self.ref_2 = Reflection2D(line_2)
+
+        return
+
+    @classmethod
+    def from_lines(cls, line_1: Line2D, line_2: Line2D):
+
+        assert np.isclose(line_1.f_x(0), 0.0), 'Line must intersect origin.'
+        assert np.isclose(line_2.f_x(0), 0.0), 'Line must intersect origin.'
+
+        dir_1 = line_1.direction
+        dir_2 = line_2.direction
+
+        theta_1 = np.arctan2(dir_1[1], dir_1[0])
+        theta_2 = np.arctan2(dir_2[1], dir_2[0])
+
+        alpha = 2.0 * (theta_2 - theta_1)
+        return OrthoRotation2D(alpha)
+
+
+    def apply(self, points):
+        pts = validate_pts(points)
+
+        # Apply the pair of reflections
+        pts = self.ref_1.apply(pts)
+        pts = self.ref_2.apply(pts)
+
+        return pts
+
+    def get_matrix(self):
+        M = np.eye(3)
+        c = np.cos(self.angle)
+        s = np.sin(self.angle)
+        R = np.asarray([
+            [c, -1.0 * s],
+            [s, c]
+        ])
+
+        M[:2, :2] = R
+
+        return M
 
 
 class Rotation2D(Transform):
@@ -101,15 +198,7 @@ class Rotation2D(Transform):
         self.centre = ensure_vec(centre)
         self.angle = wrap_angle_minus_pi_to_pi(angle)
 
-        # Set up a pair of reflections that can be used
-        # to execute this rotation.
-        half_angle = self.angle / 2.0
-
-        line_1 = Line2D(self.centre, [1, 0])
-        line_2 = Line2D(self.centre, [np.cos(half_angle), np.sin(half_angle)])
-
-        self.ref_1 = Reflection2D(line_1)
-        self.ref_2 = Reflection2D(line_2)
+        self.ortho_rotation = OrthoRotation2D(self.angle)
 
         return
 
@@ -120,8 +209,13 @@ class Rotation2D(Transform):
 
     @classmethod
     def from_lines(cls, line_1: Line2D, line_2: Line2D):
+        """
+        Create the transformation that results from
+        reflecting in line_1 then in line_2.
+        """
 
         if line_1.parallel_to(line_2):
+            # Translation.
 
             perp_dir = line_1.perp
             A = line_1.get_point_on_line()
@@ -136,7 +230,7 @@ class Rotation2D(Transform):
 
             return Translation2D(displacement)
 
-
+        # Lines are not parallel.
         P = line_1.intersection(line_2)
         alpha = line_1.angle_to(line_2)
         return Rotation2D(P, 2.0 * alpha)
@@ -145,9 +239,9 @@ class Rotation2D(Transform):
     def apply(self, points):
         pts = validate_pts(points)
 
-        # Apply the pair of reflections
-        pts = self.ref_1.apply(pts)
-        pts = self.ref_2.apply(pts)
+        pts = pts - self.centre
+        pts = self.ortho_rotation.apply(pts)
+        pts = pts + self.centre
 
         return pts
 
@@ -175,21 +269,20 @@ class Rotation2D(Transform):
 
         return Rotation2D.from_lines(l, n)
 
+    def __matmul__(self, other):
+        """
+        Overload @ operator.
+        """
+        return self.followed_by(other)
+
 
     def get_matrix(self):
-        M = np.eye(3)
-        c = np.cos(self.angle)
-        s = np.sin(self.angle)
-        R = np.asarray([
-            [c, -1.0 * s],
-            [s, c]
-        ])
-        T_inv = Translation2D(-1.0 * self.centre).get_matrix()
+
         T = Translation2D(self.centre).get_matrix()
+        R = self.ortho_rotation.get_matrix()
+        T_inv = Translation2D(-1.0 * self.centre).get_matrix()
 
-        M[:2, :2] = R
-
-        return T @ M @ T_inv
+        return T @ R @ T_inv
 
     def __repr__(self):
         centre = np.round(self.centre.flatten(), 2)
