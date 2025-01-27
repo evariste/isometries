@@ -5,26 +5,43 @@ from twor.geom.transform import Reflection2D
 from twor.utils.general import apply_hom_matrix_to_points
 from twor.utils.plotting import set_axis_glyph_bounds
 
+# Random reflection.
 P = np.random.rand(2) * 10
 v = np.random.rand(2)
-
-Q = np.random.rand(2) * 10
-u = np.random.rand(2)
-
 line_1 = Line2D(P, v)
-line_2 = Line2D(Q, u)
-
 refl_1 = Reflection2D(line_1)
-refl_2 = Reflection2D(line_2)
 
+# Apply to a glyph.
 glyph = Glyph2D()
 glyph_refl =  glyph.apply_transformation(refl_1)
 
+# Apply via the matrix.
 M = refl_1.get_matrix()
-
 pts_v2 = apply_hom_matrix_to_points(M,  glyph.points)
 
 assert np.allclose(pts_v2, glyph_refl.points), 'Homogeneous matrix gives different answer.'
+
+
+# Get the two step form
+[N, t] = refl_1.two_step_form()
+
+pts_v3 = t.apply(N.apply(glyph.points))
+assert np.allclose(pts_v2, glyph_refl.points), 'Two-step form gives different answer.'
+
+# Another reflection
+Q = np.random.rand(2) * 10
+u = np.random.rand(2)
+line_2 = Line2D(Q, u)
+refl_2 = Reflection2D(line_2)
+
+# Composition
+refl_21 = refl_1.followed_by(refl_2)
+glyph_comp = glyph.apply_transformation(refl_21)
+
+S = refl_2.get_matrix()
+
+pts_v4 = apply_hom_matrix_to_points(S @ M, glyph.points)
+assert np.allclose(pts_v4, glyph_comp.points), 'Composition result different from one obtained with hom. matrices.'
 
 
 fig, ax = plt.subplots()
