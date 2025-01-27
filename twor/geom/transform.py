@@ -44,10 +44,21 @@ class Identity(Transform):
     def get_matrix(self):
         return self.matrix
 
-class OrthoTransform2D(Transform, ABC):
-    pass
 
 class Transform2D(Transform, ABC):
+    @abstractmethod
+    def two_step_form(self):
+        """
+        The two step form represents the transformation as an orthogonal part
+        followed by a translation, i.e.,
+
+        t M in mathematical notation (M applied first).
+
+        This function returns a list [M t] i.e., the index of the transformation
+        in the list represents the order of application.
+        """
+
+class OrthoTransform2D(Transform2D, ABC):
     pass
 
 class OrthoReflection2D(OrthoTransform2D):
@@ -86,6 +97,12 @@ class OrthoReflection2D(OrthoTransform2D):
         line_2 = Line2D((0, 0), other.direction)
         return OrthoRotation2D.from_lines(line_1, line_2)
 
+    def two_step_form(self):
+        M = OrthoReflection2D(self.direction)
+        I = Identity(2)
+        return [M, I]
+
+
 class Reflection2D(Transform2D):
     """
     Reflection in 2-D.
@@ -101,6 +118,14 @@ class Reflection2D(Transform2D):
         self.pt = line.nearest_point_on_line_to([0, 0])
 
         return
+
+    def two_step_form(self):
+        pt2 = self.ortho_reflection.apply(self.pt)
+        u = self.pt - pt2
+
+        t = Translation2D(u)
+        M = OrthoReflection2D(self.direction)
+        return [M, t]
 
     def apply(self, points):
 
@@ -194,6 +219,11 @@ class OrthoRotation2D(OrthoTransform2D):
 
         return M
 
+    def two_step_form(self):
+        M = OrthoRotation2D(self.angle)
+        I = Identity(2)
+        return [M, I]
+
 
 class Rotation2D(Transform2D):
 
@@ -207,6 +237,17 @@ class Rotation2D(Transform2D):
         self.ortho_rotation = OrthoRotation2D(self.angle)
 
         return
+
+    def two_step_form(self):
+        centre_rot = self.ortho_rotation.apply(self.centre)
+        u = self.centre - centre_rot
+
+        M = OrthoRotation2D(self.angle)
+
+        t = Translation2D(u)
+
+        return [M, t]
+
 
     @classmethod
     def from_reflections(cls, refl_1: Reflection2D, refl_2: Reflection2D):
