@@ -5,6 +5,9 @@ Date: 08/06/2023
 
 import numpy as np
 from functools import cmp_to_key
+from copy import deepcopy
+
+
 EPS = np.finfo(np.float32).eps
 
 
@@ -38,6 +41,14 @@ def apply_hom_matrix_to_points(M, pts):
     """
     pts_out = M @ make_pts_homogenous(pts)
     return pts_out[:-1]
+
+def apply_transform_sequence_to_glyph(Ts, glyph):
+    glyph_out = deepcopy(glyph)
+
+    for T in Ts:
+        glyph_out = glyph_out.apply_transformation(T)
+
+    return glyph_out
 
 def rotate_vector(vec, axis, angle):
     """
