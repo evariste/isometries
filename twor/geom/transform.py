@@ -56,10 +56,20 @@ class Transform2D(Transform, ABC):
 
         This function returns a list [M t] i.e., the index of the transformation
         in the list represents the order of application.
+
+        We could have chosen the form to be translation first, but will make the
+        convention that the 'standard' two-step form applies the orthogonal
+        transformaation first then the translation second.
         """
 
 class OrthoTransform2D(Transform2D, ABC):
-    pass
+
+    @abstractmethod
+    def get_reflections(self):
+        """
+        Return one or two reflections for the orthogonal transformation.
+        """
+
 
 class OrthoReflection2D(OrthoTransform2D):
     """
@@ -102,6 +112,9 @@ class OrthoReflection2D(OrthoTransform2D):
         I = Identity(2)
         return [M, I]
 
+    def get_reflections(self):
+        M = OrthoReflection2D(self.direction)
+        return [M]
 
 class Reflection2D(Transform2D):
     """
@@ -224,6 +237,34 @@ class OrthoRotation2D(OrthoTransform2D):
         I = Identity(2)
         return [M, I]
 
+    def get_reflections(self):
+
+        xy = validate_pts([[1, 0], [0, 1]])
+        x = xy[:, [0]]
+        y = xy[:, [1]]
+
+        uv = self.apply(xy)
+        u = uv[:, [0]]
+        v = uv[:, [1]]
+
+        if np.allclose(u, x):
+            R1 = Identity(2)
+        else:
+            # Reflect in a line that goes half way between x and u
+            l = Line2D([0, 0], x + u)
+            R1 = Reflection2D(l)
+
+
+        if np.allclose(v, R1.apply(v)):
+            return [R1]
+
+        l = Line2D([0, 0], u)
+        R2 = Reflection2D(l)
+
+        assert np.allclose(R2.apply(R1.apply(x)), u), 'Error in reflections'
+        assert np.allclose(R2.apply(R1.apply(y)), v), 'Error in reflections'
+
+        return [R1, R2]
 
 class Rotation2D(Transform2D):
 
