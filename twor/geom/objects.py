@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+
 """
 Created by: Paul Aljabar
 Date: 08/06/2023
@@ -295,6 +296,18 @@ class Line2D:
         self.theta = np.arctan2(v, u)
         return
 
+    def apply_transformation(self, transf):
+        p = self.point
+        q = p + 10.0 * self.direction
+
+        p2 = transf.apply(p)
+        q2 = transf.apply(q)
+
+        d2 = q2 - p2
+
+        return Line2D(p2, d2)
+
+
     def f_x(self, x):
         if np.abs(self.b) > 0:
             y = (self.c - self.a * x) / self.b
@@ -315,8 +328,8 @@ class Line2D:
         return wrap_angle_minus_pi_to_pi(other.theta - self.theta)
 
     def parallel_to(self, other: Line2D):
-
-        return np.abs(self.angle_to(other)) < self.parallel_tol_angle
+        angle_diff = np.abs(self.angle_to(other))
+        return  (angle_diff < self.parallel_tol_angle) or (np.abs(angle_diff - np.pi) < self.parallel_tol_angle)
 
     def intersection(self, other: Line2D):
 
