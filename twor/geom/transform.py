@@ -14,7 +14,7 @@ from twor.utils.general import (
     angle_between_vectors, vecs_parallel, rotation_matrix_from_axis_and_angle
 )
 from twor.geom.objects import Line2D, Plane3D
-
+from typing import List
 
 
 class Transform(ABC):
@@ -65,10 +65,45 @@ class Transform2D(Transform, ABC):
 class OrthoTransform2D(Transform2D, ABC):
 
     @abstractmethod
-    def get_reflections(self):
+    def get_reflections(self) -> List[Reflection2D]:
         """
         Return one or two reflections for the orthogonal transformation.
         """
+
+def compose_ortho_2d(t_a: OrthoTransform2D, t_b: OrthoTransform2D):
+
+    refls = t_a.get_reflections() + t_b.get_reflections()
+
+    assert 1 < len(refls) < 5, 'Unexpected number of reflections'
+
+    lines = [r.line for r in refls]
+    l0 = lines[0]
+    l1 = lines[1]
+
+    if len(refls) == 2:
+        if l0.parallel_to(l1):
+            return Identity(2)
+
+        return OrthoRotation2D.from_lines(l0, l1)
+
+    # The sequence has three or four reflections.
+    l2 = lines[2]
+
+    angle_12 = l1.angle_to(l2)
+    rot = OrthoRotation2D(angle_12)
+
+    # Rotate lines l0 and l1 so that l1 coincides with l2.
+    # Then we can drop l1 and l2
+
+    l0_rot = l0.apply_transformation(rot)
+
+    if len(refls) == 3:
+        return OrthoReflection2D(l0_rot.direction)
+
+    # Four reflections in original list.
+    # Second and third have been cancelled.
+    l3 = lines[3]
+    return OrthoRotation2D.from_lines(l0_rot, l3)
 
 
 class OrthoReflection2D(OrthoTransform2D):
@@ -82,7 +117,18 @@ class OrthoReflection2D(OrthoTransform2D):
         normal = [-1.0 * self.direction[1], self.direction[0]]
         self.normal = ensure_unit_vec(normal)
 
+        self.line = Line2D([0, 0], self.direction)
+
         return
+
+    @classmethod
+    def from_angle(cls, angle):
+        direction = [np.cos(angle), np.sin(angle)]
+        return OrthoReflection2D(direction)
+
+    def inverse(self):
+        # Same as self.
+        return OrthoReflection2D(self.direction)
 
     def apply(self, points):
 
@@ -184,13 +230,9 @@ class OrthoRotation2D(OrthoTransform2D):
         # Set up a pair of reflections that can be used
         # to execute this rotation.
         half_angle = self.angle / 2.0
-        O = [0, 0]
 
-        line_1 = Line2D(O, [1, 0])
-        line_2 = Line2D(O, [np.cos(half_angle), np.sin(half_angle)])
-
-        self.ref_1 = Reflection2D(line_1)
-        self.ref_2 = Reflection2D(line_2)
+        self.ref_1 = OrthoReflection2D([1, 0])
+        self.ref_2 = OrthoReflection2D.from_angle(half_angle)
 
         return
 
@@ -208,6 +250,13 @@ class OrthoRotation2D(OrthoTransform2D):
 
         alpha = 2.0 * (theta_2 - theta_1)
         return OrthoRotation2D(alpha)
+
+
+    def inverse(self):
+        refls = self.get_reflections()
+        lines = [r.line for r in refls]
+        l0, l1 = lines
+        return self.from_lines(l1, l0)
 
 
     def apply(self, points):
@@ -228,7 +277,7 @@ class OrthoRotation2D(OrthoTransform2D):
             [s, c]
         ])
 
-        M[:2, :2] = R
+        M[:2, :2] = R.squeeze()
 
         return M
 
