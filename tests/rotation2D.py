@@ -74,6 +74,20 @@ def test_reflection_decomp():
     assert np.allclose(glyph_rotate.points, glyph_B.points), 'Results from reflections and direct orthogonal transformation do not match.'
 
 
+    # Random reflection.
+    v = np.random.rand(2) - [0.5, 0.5]
+    ortho_refl = OrthoReflection2D(v)
+
+    reflections_C = ortho2D_to_reflections(ortho_refl)
+
+    assert len(reflections_C) == 1, 'Unexpected number of reflections.'
+    refl_C = reflections_C[0]
+
+    glyph_C = glyph.apply_transformation(refl_C)
+    glyph_D = glyph.apply_transformation(ortho_refl)
+    assert np.allclose(glyph_C.points, glyph_D.points), 'Results from reflections and direct orthogonal transformation do not match.'
+
+
     return
 
 
