@@ -23,14 +23,6 @@ class OrthoTransform2D(Transform2D, ABC):
         Return one or two reflections for the orthogonal transformation.
         """
 
-
-def random_ortho_reflection2d():
-    # Random orthogonal 2D reflection.
-    v = np.random.rand(2) - [0.5, 0.5]
-    ortho_refl = OrthoReflection2D(v)
-    return ortho_refl
-
-
 class OrthoReflection2D(OrthoTransform2D):
     """
     Orthogonal (linear) reflection in 2-D.
@@ -448,7 +440,7 @@ class Rotation2D(Transform2D):
         return f'Rotation2D(\n {centre},\n {angle}\n)'
 
 
-class Translation2D(Transform):
+class Translation2D(Transform2D):
 
     def __init__(self, v):
 
@@ -481,6 +473,9 @@ class Translation2D(Transform):
 
 
 def compose_2d(transf_a: Transform2D, transf_b: Transform2D):
+    """
+    Compose two 2D transformations.
+    """
 
     M_a, t_a = transf_a.two_step_form()
     M_b, t_b = transf_b.two_step_form()
@@ -512,27 +507,6 @@ def compose_2d(transf_a: Transform2D, transf_b: Transform2D):
     t_out = Translation2D(v)
 
     return transf_2d_from_two_step(M_out, t_out)
-
-
-def transf_2d_from_two_step(M: OrthoTransform2D, t: Translation2D):
-    """
-    Generate a single tranform object from a two step form.
-    """
-
-    if isinstance(M, Identity):
-        return t
-
-    if isinstance(t, Identity):
-        return M
-
-    if isinstance(M, OrthoReflection2D):
-        result = Reflection2D.from_two_step_form(M, t)
-    elif isinstance(M, OrthoRotation2D):
-        result = Rotation2D.from_two_step_form(M, t)
-    else:
-        raise Exception('Unexpected type for first transform M')
-
-    return result
 
 def compose_ortho_2d(t_a: OrthoTransform2D, t_b: OrthoTransform2D):
     """
@@ -581,6 +555,27 @@ def compose_ortho_2d(t_a: OrthoTransform2D, t_b: OrthoTransform2D):
     # Second and third have been cancelled.
     l3 = lines[3]
     return OrthoRotation2D.from_lines(l0_rot, l3)
+
+
+def transf_2d_from_two_step(M: OrthoTransform2D, t: Translation2D):
+    """
+    Generate a single tranform object from a two step form.
+    """
+
+    if isinstance(M, Identity):
+        return t
+
+    if isinstance(t, Identity):
+        return M
+
+    if isinstance(M, OrthoReflection2D):
+        result = Reflection2D.from_two_step_form(M, t)
+    elif isinstance(M, OrthoRotation2D):
+        result = Rotation2D.from_two_step_form(M, t)
+    else:
+        raise Exception('Unexpected type for first transform M')
+
+    return result
 
 
 def ortho2D_to_reflections(ortho2d_transf: OrthoTransform2D):
@@ -701,6 +696,12 @@ def random_reflection2d():
     refl = Reflection2D(line_1)
     return refl
 
+def random_ortho_reflection2d():
+    # Random orthogonal 2D reflection.
+    v = np.random.rand(2) - [0.5, 0.5]
+    ortho_refl = OrthoReflection2D(v)
+    return ortho_refl
+
 def random_rotation2d():
     # Random general 2D rotation.
     alpha = np.random.rand() * 2.0 * np.pi
@@ -714,3 +715,4 @@ def random_ortho_rotation2d():
     # Random orthogonal rotation
     ortho_rot = OrthoRotation2D(alpha)
     return ortho_rot
+
