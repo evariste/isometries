@@ -1,6 +1,6 @@
 import numpy as np
 from twor.utils.general import random_rotation_3D, ensure_vec
-from twor.geom.transform import Rotation3D, OriginRotation3D, Translation3D
+from twor.geom.transform_3d import Rotation3D, OriginRotation3D, Translation3D
 
 ax, theta = random_rotation_3D()
 P = np.random.rand(3) * 10

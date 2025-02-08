@@ -1,7 +1,7 @@
 
 import sys
 import numpy as np
-from twor.geom.transform import Rotation2D, OrthoRotation2D, OrthoReflection2D, compose_ortho_2d
+from twor.geom.transform_2d import Rotation2D, OrthoRotation2D, OrthoReflection2D, compose_ortho_2d
 from twor.geom.objects import Glyph2D, Line2D
 from twor.utils.general import apply_hom_matrix_to_points, apply_transform_sequence_to_glyph
 

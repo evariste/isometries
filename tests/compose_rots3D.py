@@ -1,6 +1,6 @@
 import numpy as np
 from twor.utils.general import random_rotation_3D, ensure_vec
-from twor.geom.transform import Rotation3D, TransOriginRotation3D
+from twor.geom.transform_3d import Rotation3D
 
 def gen_random_rot3D():
 

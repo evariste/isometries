@@ -1,7 +1,7 @@
 import numpy as np
 
 from twor.utils.general import random_rotation_3D, cross_product, vecs_parallel
-from twor.geom.transform import OriginRotation3D
+from twor.geom.transform_3d import OriginRotation3D
 
 # Compose two pure rotations:
 
