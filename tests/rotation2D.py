@@ -1,18 +1,30 @@
 
 import sys
 import numpy as np
-from twor.geom.transform_2d import Rotation2D, OrthoRotation2D, OrthoReflection2D, compose_ortho_2d, OrthoTransform2D, ortho2D_to_reflections
-from twor.geom.objects import Glyph2D, Line2D
+from twor.geom.transform_2d import (
+    Rotation2D, OrthoRotation2D, OrthoReflection2D, compose_ortho_2d, OrthoTransform2D, ortho2D_to_reflections
+)
+from twor.geom.objects import Glyph2D
 from twor.utils.general import apply_hom_matrix_to_points, apply_transform_sequence_to_glyph
 
 def main():
-    #############################################################################
 
+    test_rotation()
+
+    test_reflection_decomp()
+
+    run_composition_tests()
+
+    test_inverses()
+
+    print('Done.')
+
+    return 0
+
+def test_rotation():
     # Random general rotation.
     alpha = np.random.rand() * 2.0 * np.pi
-
     C = np.random.rand(2) * 10
-
     rot = Rotation2D(C, alpha)
 
     #############################################################################
@@ -26,27 +38,7 @@ def main():
 
     assert np.allclose(pts_v2, glyph_rot.points), 'Result from homogeneous matrix and direct transformation do not match.'
 
-    #############################################################################
-
-
-    #############################################################################
-
-    test_reflection_decomp()
-
-    #############################################################################
-
-    run_composition_tests()
-
-    #############################################################################
-
-    test_inverses()
-
-    #############################################################################
-
-
-    print('Done.')
-
-    return 0
+    return
 
 def test_reflection_decomp():
 
@@ -55,7 +47,6 @@ def test_reflection_decomp():
     ortho_rot = OrthoRotation2D(alpha)
 
     glyph = Glyph2D()
-
 
     # Decompose to reflections.
     reflections = ortho_rot.get_reflections()
