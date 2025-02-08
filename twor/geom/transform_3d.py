@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 from quaternion import quaternion
-
+from abc import ABC, abstractmethod
 from twor.utils.general import (
     ensure_unit_vec, ensure_vec, validate_pts, wrap_angle_minus_pi_to_pi, rotate_vector, cross_product,
     angle_between_vectors, vecs_parallel, rotation_matrix_from_axis_and_angle
@@ -10,8 +10,11 @@ from twor.utils.general import (
 from twor.geom.transform import Transform, Identity
 from twor.geom.objects import Plane3D
 
+class Transform3D(Transform, ABC):
+    pass
 
-class Translation3D(Transform):
+
+class Translation3D(Transform3D):
 
     def __init__(self, v):
 
@@ -42,7 +45,7 @@ class Translation3D(Transform):
         return f'Translation3D(\n {v}\n)'
 
 
-class Reflection3D(Transform):
+class Reflection3D(Transform3D):
 
     def __init__(self, plane: Plane3D):
         super().__init__()
@@ -104,7 +107,7 @@ class Reflection3D(Transform):
 
 
 # TODO: Rename as OrthoRotation3D
-class OriginRotation3D(Transform):
+class OriginRotation3D(Transform3D):
     """
     Rotation about an axis going through (0, 0, 0).
     """
@@ -235,7 +238,7 @@ class OriginRotation3D(Transform):
         ang = np.round(self.angle, 2)
         return f'OriginRotation3D(\n {ax},\n {ang}\n)'
 
-class Rotation3D(Transform):
+class Rotation3D(Transform3D):
 
     def __init__(self, point, axis_dir, angle):
         """
@@ -309,7 +312,7 @@ class Rotation3D(Transform):
 
         return np.allclose(R, R_other) and np.allclose(p, p_other)
 
-class TransOriginRotation3D(Transform):
+class TransOriginRotation3D(Transform3D):
     """
     A two-step transformation of the form
     T M : x -> T ( M (x) )
@@ -391,7 +394,7 @@ class TransOriginRotation3D(Transform):
         strs = ['TransOriginRotation3D', repr(self.origin_rot), repr(self.tra)]
         return '\n'.join(strs)
 
-class TransRotation3D(Transform):
+class TransRotation3D(Transform3D):
     """
     A two-step transformation of the form
     T M : x -> T ( M (x) )
