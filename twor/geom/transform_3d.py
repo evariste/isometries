@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 import numpy as np
 from quaternion import quaternion
+
 from twor.utils.general import (
     ensure_unit_vec, ensure_vec, validate_pts, wrap_angle_minus_pi_to_pi, rotate_vector, cross_product,
     angle_between_vectors, vecs_parallel, rotation_matrix_from_axis_and_angle
 )
-from twor.geom.transform import Transform
+from twor.geom.transform import Transform, Identity
 from twor.geom.objects import Plane3D
 
 
@@ -27,6 +27,11 @@ class Translation3D(Transform):
         T[:3, -1] = np.squeeze(self.vec)
         return T
 
+    def two_step_form(self):
+        I = Identity(3)
+        t = Translation3D(self.vec)
+        return [I, t]
+
     def __repr__(self):
         v = np.round(self.vec.flatten(), 2)
         return f'Translation3D(\n {v}\n)'
@@ -38,6 +43,7 @@ class Reflection3D(Transform):
         super().__init__()
 
         self.plane = plane
+        # TODO: Implement with an OrthoReflection3D
 
         return
 
@@ -59,7 +65,9 @@ class Reflection3D(Transform):
 
         return ret
 
-
+    def two_step_form(self):
+        # TODO
+        pass
 
     def get_matrix(self):
 
@@ -85,7 +93,7 @@ class Reflection3D(Transform):
         return f'Reflection3D(\n {normal},\n {pt}\n)'
 
 
-
+# TODO: Rename as OrthoRotation3D
 class OriginRotation3D(Transform):
     """
     Rotation about an axis going through (0, 0, 0).
@@ -128,6 +136,9 @@ class OriginRotation3D(Transform):
 
         return
 
+    def two_step_form(self):
+        # TODO
+        pass
 
     def to_quaternion(self):
         v = self.axis
@@ -239,6 +250,9 @@ class Rotation3D(Transform):
 
         return trans_orig_rot.to_trans_rot()
 
+    def two_step_form(self):
+        # TODO
+        pass
 
 
     def to_trans_origin_rot(self):
@@ -334,6 +348,9 @@ class TransOriginRotation3D(Transform):
 
         return trans_rot
 
+    def two_step_form(self):
+        # TODO
+        pass
 
 
     def get_matrix(self):
@@ -380,6 +397,9 @@ class TransRotation3D(Transform):
 
         return cls(pt, ax, ang, v)
 
+    def two_step_form(self):
+        # TODO
+        pass
 
     def apply(self, points):
         pts = self.gen_rot.apply(points)

@@ -13,21 +13,7 @@ from typing import List
 
 
 class Transform2D(Transform, ABC):
-    @abstractmethod
-    def two_step_form(self):
-        """
-        The two step form represents the transformation as an orthogonal part
-        followed by a translation, i.e.,
-
-        t M in mathematical notation (M applied first).
-
-        This function returns a list [M t] i.e., the index of the transformation
-        in the list represents the order of application.
-
-        We could have chosen the form to be translation first, but will make the
-        convention that the 'standard' two-step form applies the orthogonal
-        transformaation first then the translation second.
-        """
+    pass
 
 class OrthoTransform2D(Transform2D, ABC):
 
@@ -414,4 +400,8 @@ class Translation2D(Transform):
         v = np.round(self.vec.flatten(), 2)
         return f'Translation2D(\n {v}\n)'
 
+    def two_step_form(self):
+        I = Identity(2)
+        t = Translation2D(self.vec)
+        return [I, t]
 
