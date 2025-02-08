@@ -68,6 +68,7 @@ def ortho2D_to_reflections(ortho2d_transf: OrthoTransform2D):
     reflections.
     """
 
+    # x = (1, 0)   y = (0, 1)
     xy = validate_pts([[1, 0], [0, 1]])
     x = xy[:, [0]]
     y = xy[:, [1]]
@@ -76,6 +77,8 @@ def ortho2D_to_reflections(ortho2d_transf: OrthoTransform2D):
     u = uv[:, [0]]
     v = uv[:, [1]]
 
+    # x -> u and y -> v
+
     if np.allclose(u, x):
         R1 = Identity(2)
     else:
@@ -83,7 +86,7 @@ def ortho2D_to_reflections(ortho2d_transf: OrthoTransform2D):
         l = Line2D([0, 0], x + u)
         R1 = Reflection2D(l)
 
-    if np.allclose(v, R1.apply(v)):
+    if np.allclose(R1.apply(y), v):
         return [R1]
 
     l = Line2D([0, 0], u)
