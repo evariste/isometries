@@ -22,38 +22,6 @@ class OrthoTransform2D(Transform3D, ABC):
         Return one or two reflections for the orthogonal transformation.
         """
 
-
-class Translation3D(Transform3D):
-
-    def __init__(self, v):
-
-        super().__init__()
-        self.vec = ensure_vec(v)
-
-    def apply(self, points):
-        pts = validate_pts(points)
-        return pts + self.vec
-
-    def get_matrix(self):
-        T = np.eye(4)
-        T[:3, -1] = np.squeeze(self.vec)
-        return T
-
-    def two_step_form(self):
-        I = Identity(3)
-        t = Translation3D(self.vec)
-        return [I, t]
-
-    @classmethod
-    def from_two_step_form(cls, M, t):
-        # TODO
-        pass
-
-    def __repr__(self):
-        v = np.round(self.vec.flatten(), 2)
-        return f'Translation3D(\n {v}\n)'
-
-
 class OrthoReflection3D(OrthoTransform2D):
 
     def __init__(self):
@@ -502,4 +470,38 @@ class TransRotation3D(Transform3D):
     def __repr__(self):
         strs = ['TransRotation3D', repr(self.gen_rot), repr(self.tra)]
         return '\n'.join(strs)
+
+
+
+
+
+class Translation3D(Transform3D):
+
+    def __init__(self, v):
+
+        super().__init__()
+        self.vec = ensure_vec(v)
+
+    def apply(self, points):
+        pts = validate_pts(points)
+        return pts + self.vec
+
+    def get_matrix(self):
+        T = np.eye(4)
+        T[:3, -1] = np.squeeze(self.vec)
+        return T
+
+    def two_step_form(self):
+        I = Identity(3)
+        t = Translation3D(self.vec)
+        return [I, t]
+
+    @classmethod
+    def from_two_step_form(cls, M, t):
+        # TODO
+        pass
+
+    def __repr__(self):
+        v = np.round(self.vec.flatten(), 2)
+        return f'Translation3D(\n {v}\n)'
 
