@@ -22,240 +22,7 @@ class OrthoTransform2D(Transform2D, ABC):
         """
         Return one or two reflections for the orthogonal transformation.
         """
-def compose_2d(transf_a: Transform2D, transf_b: Transform2D):
 
-    M_a, t_a = transf_a.two_step_form()
-    M_b, t_b = transf_b.two_step_form()
-
-    # Application sequence (starting from the left:
-    # M_a t_a M_b t_b
-
-    # Flip the middle pair.
-    M_c, t_c = flip_two_step_form_2D([t_a, M_b])
-
-    # Sequence is now
-    # M_a M_c t_c t_b
-
-    # We should have M_c == M_b
-    assert M_b.matrix_equals(M_c)
-
-    M_out = compose_ortho_2d(M_a, M_b)
-
-    v = ensure_vec([0, 0])
-    if is_translation2d(t_b):
-        v += t_b.vec
-    if is_translation2d(t_c):
-        v += t_c.vec
-
-
-    if np.allclose(v, [0, 0]):
-        return M_out
-
-    t_out = Translation2D(v)
-
-    return transf_2d_from_two_step(M_out, t_out)
-
-
-def transf_2d_from_two_step(M: OrthoTransform2D, t: Translation2D):
-    """
-    Generate a single tranform object from a two step form.
-    """
-
-    if isinstance(M, Identity):
-        return t
-
-    if isinstance(t, Identity):
-        return M
-
-    if isinstance(M, OrthoReflection2D):
-        result = Reflection2D.from_two_step_form(M, t)
-    elif isinstance(M, OrthoRotation2D):
-        result = Rotation2D.from_two_step_form(M, t)
-    else:
-        raise Exception('Unexpected type for first transform M')
-
-    return result
-
-def compose_ortho_2d(t_a: OrthoTransform2D, t_b: OrthoTransform2D):
-    """
-    Compose a pair of orthogonal 2D transformations.
-    """
-    refls = []
-    if not is_identity(t_a):
-        refls += t_a.get_reflections()
-
-    if not is_identity(t_b):
-        refls += t_b.get_reflections()
-
-    if len(refls) == 0:
-        return Identity(2)
-
-    if len(refls) == 1:
-        return refls[0]
-
-    assert 1 < len(refls) < 5, 'Unexpected number of reflections'
-
-    lines = [r.line for r in refls]
-    l0 = lines[0]
-    l1 = lines[1]
-
-    if len(refls) == 2:
-        if l0.parallel_to(l1):
-            return Identity(2)
-
-        return OrthoRotation2D.from_lines(l0, l1)
-
-    # The sequence has three or four reflections.
-    l2 = lines[2]
-
-    angle_12 = l1.angle_to(l2)
-    rot = OrthoRotation2D(angle_12)
-
-    # Rotate lines l0 and l1 so that l1 coincides with l2.
-    # Then we can drop l1 and l2
-
-    l0_rot = l0.apply_transformation(rot)
-
-    if len(refls) == 3:
-        return OrthoReflection2D(l0_rot.direction)
-
-    # Four reflections in original list.
-    # Second and third have been cancelled.
-    l3 = lines[3]
-    return OrthoRotation2D.from_lines(l0_rot, l3)
-
-
-def ortho2D_to_reflections(ortho2d_transf: OrthoTransform2D):
-    """
-    Break up a generic orthogonal 2D transform into a sequence of
-    reflections.
-    """
-
-    # x = (1, 0)   y = (0, 1)
-    xy = validate_pts([[1, 0], [0, 1]])
-    x = xy[:, [0]]
-    y = xy[:, [1]]
-
-    uv = ortho2d_transf.apply(xy)
-    u = uv[:, [0]]
-    v = uv[:, [1]]
-
-    # x -> u and y -> v
-
-    if np.allclose(u, x):
-        R1 = Identity(2)
-    else:
-        # Reflect in a line that goes half way between x and u
-        l = Line2D([0, 0], x + u)
-        R1 = Reflection2D(l)
-
-    if np.allclose(R1.apply(y), v):
-        return [R1]
-
-    l = Line2D([0, 0], u)
-    R2 = Reflection2D(l)
-
-    assert np.allclose(R2.apply(R1.apply(x)), u), 'Error in reflections'
-    assert np.allclose(R2.apply(R1.apply(y)), v), 'Error in reflections'
-
-    return [R1, R2]
-
-def flip_two_step_form_2D(two_step_transf):
-    """
-    Given a two step form for a 2D transformation consisting of
-    a translation and orthogonal 2D transform, in some order,
-    return the equivalent two step form with order reversed.
-
-    Let M be an orthogonal transformation and t be a translation
-
-    The input two-step form either applies M first or t first.
-
-    Return the two-step form that reverses the order of application.
-
-    We represent a two step form by a length 2 list where the index of
-    the elements determines the order of application. E.g., [M, t]
-    means the orthogonal transformation is applied first.
-    """
-
-    assert len(two_step_transf) == 2, 'Unexpected length of two-step form.'
-
-    t0 = two_step_transf[0]
-    t1 = two_step_transf[1]
-    I = Identity(2)
-
-    if is_identity(t0):
-        return [t1, I]
-
-    if is_identity(t1):
-        return [I, t0]
-
-    # Neither t0, nor t1, are the identity.
-
-    if is_ortho2d(t0):
-        # Form should be [M, t]
-        assert is_translation2d(t1), 'Expect second tranform to be a translation.'
-        # Translation vector
-        p = t1.vec
-
-        # Alias for orthogonal part:
-        M = t0
-        M_inv = M.inverse()
-
-        q = M_inv.apply(p)
-
-        t_q = Translation2D(q)
-
-        return [t_q, M]
-
-    # First transformation is not orthogonal.
-    assert is_translation2d(t0), 'Expect first tranform to be a translation'
-    assert is_ortho2d(t1), 'Expect second transform to be orthogonal.'
-
-    # Form is [t, M]
-
-    # Translation vector
-    p = t0.vec
-
-    # Alias for orthogonal part
-    M = t1
-
-    q = M.apply(p)
-
-    t_q = Translation2D(q)
-
-    return [M, t_q]
-
-
-def is_identity(transf: Transform2D):
-    return isinstance(transf, Identity)
-
-def is_ortho2d(transf: Transform2D):
-    return isinstance(transf, OrthoTransform2D)
-
-def is_translation2d(transf: Transform2D):
-    return isinstance(transf, Translation2D)
-
-def random_reflection2d():
-    # Random general 2D reflection.
-    P = np.random.rand(2) * 10
-    v = np.random.rand(2)
-    line_1 = Line2D(P, v)
-    refl = Reflection2D(line_1)
-    return refl
-
-def random_rotation2d():
-    # Random general 2D rotation.
-    alpha = np.random.rand() * 2.0 * np.pi
-    C = np.random.rand(2) * 10
-    rot = Rotation2D(C, alpha)
-    return rot
-
-def random_ortho_rotation2d():
-    # Random orthogonal 2D rotation.
-    alpha = np.random.rand() * 2.0 * np.pi
-    # Random orthogonal rotation
-    ortho_rot = OrthoRotation2D(alpha)
-    return ortho_rot
 
 def random_ortho_reflection2d():
     # Random orthogonal 2D reflection.
@@ -711,3 +478,239 @@ class Translation2D(Transform):
         assert is_identity(M), 'Expect first transform to be identity.'
         assert is_translation2d(t), 'Expect second transform to be a translation.'
         return Translation2D(t.vec)
+
+
+def compose_2d(transf_a: Transform2D, transf_b: Transform2D):
+
+    M_a, t_a = transf_a.two_step_form()
+    M_b, t_b = transf_b.two_step_form()
+
+    # Application sequence (starting from the left:
+    # M_a t_a M_b t_b
+
+    # Flip the middle pair.
+    M_c, t_c = flip_two_step_form_2D([t_a, M_b])
+
+    # Sequence is now
+    # M_a M_c t_c t_b
+
+    # We should have M_c == M_b
+    assert M_b.matrix_equals(M_c)
+
+    M_out = compose_ortho_2d(M_a, M_b)
+
+    v = ensure_vec([0, 0])
+    if is_translation2d(t_b):
+        v += t_b.vec
+    if is_translation2d(t_c):
+        v += t_c.vec
+
+
+    if np.allclose(v, [0, 0]):
+        return M_out
+
+    t_out = Translation2D(v)
+
+    return transf_2d_from_two_step(M_out, t_out)
+
+
+def transf_2d_from_two_step(M: OrthoTransform2D, t: Translation2D):
+    """
+    Generate a single tranform object from a two step form.
+    """
+
+    if isinstance(M, Identity):
+        return t
+
+    if isinstance(t, Identity):
+        return M
+
+    if isinstance(M, OrthoReflection2D):
+        result = Reflection2D.from_two_step_form(M, t)
+    elif isinstance(M, OrthoRotation2D):
+        result = Rotation2D.from_two_step_form(M, t)
+    else:
+        raise Exception('Unexpected type for first transform M')
+
+    return result
+
+def compose_ortho_2d(t_a: OrthoTransform2D, t_b: OrthoTransform2D):
+    """
+    Compose a pair of orthogonal 2D transformations.
+    """
+    refls = []
+    if not is_identity(t_a):
+        refls += t_a.get_reflections()
+
+    if not is_identity(t_b):
+        refls += t_b.get_reflections()
+
+    if len(refls) == 0:
+        return Identity(2)
+
+    if len(refls) == 1:
+        return refls[0]
+
+    assert 1 < len(refls) < 5, 'Unexpected number of reflections'
+
+    lines = [r.line for r in refls]
+    l0 = lines[0]
+    l1 = lines[1]
+
+    if len(refls) == 2:
+        if l0.parallel_to(l1):
+            return Identity(2)
+
+        return OrthoRotation2D.from_lines(l0, l1)
+
+    # The sequence has three or four reflections.
+    l2 = lines[2]
+
+    angle_12 = l1.angle_to(l2)
+    rot = OrthoRotation2D(angle_12)
+
+    # Rotate lines l0 and l1 so that l1 coincides with l2.
+    # Then we can drop l1 and l2
+
+    l0_rot = l0.apply_transformation(rot)
+
+    if len(refls) == 3:
+        return OrthoReflection2D(l0_rot.direction)
+
+    # Four reflections in original list.
+    # Second and third have been cancelled.
+    l3 = lines[3]
+    return OrthoRotation2D.from_lines(l0_rot, l3)
+
+
+def ortho2D_to_reflections(ortho2d_transf: OrthoTransform2D):
+    """
+    Break up a generic orthogonal 2D transform into a sequence of
+    reflections.
+    """
+
+    # x = (1, 0)   y = (0, 1)
+    xy = validate_pts([[1, 0], [0, 1]])
+    x = xy[:, [0]]
+    y = xy[:, [1]]
+
+    uv = ortho2d_transf.apply(xy)
+    u = uv[:, [0]]
+    v = uv[:, [1]]
+
+    # x -> u and y -> v
+
+    if np.allclose(u, x):
+        R1 = Identity(2)
+    else:
+        # Reflect in a line that goes half way between x and u
+        l = Line2D([0, 0], x + u)
+        R1 = Reflection2D(l)
+
+    if np.allclose(R1.apply(y), v):
+        return [R1]
+
+    l = Line2D([0, 0], u)
+    R2 = Reflection2D(l)
+
+    assert np.allclose(R2.apply(R1.apply(x)), u), 'Error in reflections'
+    assert np.allclose(R2.apply(R1.apply(y)), v), 'Error in reflections'
+
+    return [R1, R2]
+
+def flip_two_step_form_2D(two_step_transf):
+    """
+    Given a two step form for a 2D transformation consisting of
+    a translation and orthogonal 2D transform, in some order,
+    return the equivalent two step form with order reversed.
+
+    Let M be an orthogonal transformation and t be a translation
+
+    The input two-step form either applies M first or t first.
+
+    Return the two-step form that reverses the order of application.
+
+    We represent a two step form by a length 2 list where the index of
+    the elements determines the order of application. E.g., [M, t]
+    means the orthogonal transformation is applied first.
+    """
+
+    assert len(two_step_transf) == 2, 'Unexpected length of two-step form.'
+
+    t0 = two_step_transf[0]
+    t1 = two_step_transf[1]
+    I = Identity(2)
+
+    if is_identity(t0):
+        return [t1, I]
+
+    if is_identity(t1):
+        return [I, t0]
+
+    # Neither t0, nor t1, are the identity.
+
+    if is_ortho2d(t0):
+        # Form should be [M, t]
+        assert is_translation2d(t1), 'Expect second tranform to be a translation.'
+        # Translation vector
+        p = t1.vec
+
+        # Alias for orthogonal part:
+        M = t0
+        M_inv = M.inverse()
+
+        q = M_inv.apply(p)
+
+        t_q = Translation2D(q)
+
+        return [t_q, M]
+
+    # First transformation is not orthogonal.
+    assert is_translation2d(t0), 'Expect first tranform to be a translation'
+    assert is_ortho2d(t1), 'Expect second transform to be orthogonal.'
+
+    # Form is [t, M]
+
+    # Translation vector
+    p = t0.vec
+
+    # Alias for orthogonal part
+    M = t1
+
+    q = M.apply(p)
+
+    t_q = Translation2D(q)
+
+    return [M, t_q]
+
+
+def is_identity(transf: Transform2D):
+    return isinstance(transf, Identity)
+
+def is_ortho2d(transf: Transform2D):
+    return isinstance(transf, OrthoTransform2D)
+
+def is_translation2d(transf: Transform2D):
+    return isinstance(transf, Translation2D)
+
+def random_reflection2d():
+    # Random general 2D reflection.
+    P = np.random.rand(2) * 10
+    v = np.random.rand(2)
+    line_1 = Line2D(P, v)
+    refl = Reflection2D(line_1)
+    return refl
+
+def random_rotation2d():
+    # Random general 2D rotation.
+    alpha = np.random.rand() * 2.0 * np.pi
+    C = np.random.rand(2) * 10
+    rot = Rotation2D(C, alpha)
+    return rot
+
+def random_ortho_rotation2d():
+    # Random orthogonal 2D rotation.
+    alpha = np.random.rand() * 2.0 * np.pi
+    # Random orthogonal rotation
+    ortho_rot = OrthoRotation2D(alpha)
+    return ortho_rot
