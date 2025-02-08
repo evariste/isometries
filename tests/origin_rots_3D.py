@@ -1,15 +1,15 @@
 import numpy as np
 
 from twor.utils.general import random_rotation_3D, cross_product, vecs_parallel
-from twor.geom.transform_3d import OriginRotation3D
+from twor.geom.transform_3d import OrthoRotation3D
 
 # Compose two pure rotations:
 
 ax, theta = random_rotation_3D()
-rot_A = OriginRotation3D(ax, theta)
+rot_A = OrthoRotation3D(ax, theta)
 
 ax, theta = random_rotation_3D()
-rot_B = OriginRotation3D(ax, theta)
+rot_B = OrthoRotation3D(ax, theta)
 
 rot_C = rot_A.followed_by(rot_B)
 

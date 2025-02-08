@@ -1,6 +1,6 @@
 import numpy as np
 from twor.utils.general import random_rotation_3D, ensure_vec
-from twor.geom.transform_3d import Rotation3D, OriginRotation3D, Translation3D
+from twor.geom.transform_3d import Rotation3D, OrthoRotation3D, Translation3D
 
 ax, theta = random_rotation_3D()
 P = np.random.rand(3) * 10
@@ -12,7 +12,7 @@ M_A = rot_A.get_matrix()
 
 print(rot_A)
 
-rot_B = OriginRotation3D(ax, theta)
+rot_B = OrthoRotation3D(ax, theta)
 
 Q = rot_B.apply(P)
 
