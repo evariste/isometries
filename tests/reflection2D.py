@@ -3,8 +3,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
-from twor.geom.objects import Line2D, Glyph2D
-from twor.geom.transform_2d import Reflection2D
+from twor.geom.objects import Glyph2D
+from twor.geom.transform_2d import random_reflection2d
 from twor.utils.general import apply_hom_matrix_to_points
 from twor.utils.plotting import set_axis_glyph_bounds
 
@@ -23,7 +23,7 @@ def main():
 
 
 def test_apply_reflection():
-    refl = make_random_reflection()
+    refl = random_reflection2d()
 
     # Apply to a glyph.
     glyph = Glyph2D()
@@ -37,18 +37,10 @@ def test_apply_reflection():
 
     return
 
-def make_random_reflection():
-    # Random reflection.
-    P = np.random.rand(2) * 10
-    v = np.random.rand(2)
-    line_1 = Line2D(P, v)
-    refl = Reflection2D(line_1)
-
-    return refl
 
 
 def test_two_step_form():
-    refl = make_random_reflection()
+    refl = random_reflection2d()
     glyph = Glyph2D()
 
     # Get the two step form
@@ -63,8 +55,8 @@ def test_two_step_form():
     return
 
 def test_composition():
-    refl_1 = make_random_reflection()
-    refl_2 = make_random_reflection()
+    refl_1 = random_reflection2d()
+    refl_2 = random_reflection2d()
     glyph = Glyph2D()
 
     # Composition
@@ -83,7 +75,7 @@ def test_composition():
     return
 
 def visualise_reflection():
-    refl = make_random_reflection()
+    refl = random_reflection2d()
     line = refl.line
     glyph = Glyph2D()
 

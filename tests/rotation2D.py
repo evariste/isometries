@@ -2,7 +2,8 @@
 import sys
 import numpy as np
 from twor.geom.transform_2d import (
-    Rotation2D, OrthoRotation2D, OrthoReflection2D, compose_ortho_2d, OrthoTransform2D, ortho2D_to_reflections
+    Rotation2D, OrthoRotation2D, OrthoReflection2D, compose_ortho_2d, OrthoTransform2D, ortho2D_to_reflections,
+    random_rotation2d, random_reflection2d, random_ortho_rotation2d, random_ortho_reflection2d
 )
 from twor.geom.objects import Glyph2D
 from twor.utils.general import apply_hom_matrix_to_points, apply_transform_sequence_to_glyph
@@ -22,10 +23,8 @@ def main():
     return 0
 
 def test_rotation():
-    # Random general rotation.
-    alpha = np.random.rand() * 2.0 * np.pi
-    C = np.random.rand(2) * 10
-    rot = Rotation2D(C, alpha)
+
+    rot = random_rotation2d()
 
     #############################################################################
 
@@ -42,9 +41,7 @@ def test_rotation():
 
 def test_reflection_decomp():
 
-    alpha = np.random.rand() * 2.0 * np.pi
-    # Random orthogonal rotation
-    ortho_rot = OrthoRotation2D(alpha)
+    ortho_rot = random_ortho_rotation2d()
 
     glyph = Glyph2D()
 
@@ -84,9 +81,7 @@ def test_reflection_decomp():
 
 def run_composition_tests():
 
-    alpha = np.random.rand() * 2.0 * np.pi
-    # Random orthogonal rotation
-    ortho_rot_1 = OrthoRotation2D(alpha)
+    ortho_rot_1 = random_ortho_rotation2d()
 
     glyph = Glyph2D()
 
@@ -98,6 +93,7 @@ def run_composition_tests():
     # Random reflection.
     v = np.random.rand(2) - [0.5, 0.5]
     ortho_refl_1 = OrthoReflection2D(v)
+
 
     #############################################################################
     # Rotation then random orthogonal reflection
@@ -139,24 +135,21 @@ def test_composition(
 
 def test_inverses():
 
-    alpha = np.random.rand() * 2.0 * np.pi
+    # Random orthogonal rotation.
+    ortho_rot = random_ortho_rotation2d()
 
-    # Random orthogonal rotation
-    ortho_rot = OrthoRotation2D(alpha)
+    # Random orthogonal reflection.
+    ortho_refl = random_ortho_reflection2d()
 
-    # Random reflection.
-    v = np.random.rand(2) - [0.5, 0.5]
-    ortho_refl = OrthoReflection2D(v)
+    inv_ortho_rot = ortho_rot.inverse()
 
-    inv_ortho_rot_1 = ortho_rot.inverse()
-
-    mat_prod = ortho_rot.get_matrix() @ inv_ortho_rot_1.get_matrix()
+    mat_prod = ortho_rot.get_matrix() @ inv_ortho_rot.get_matrix()
 
     assert np.allclose(mat_prod, np.eye(3)), 'Inverse incorrect.'
 
-    inv_ortho_refl_1 = ortho_refl.inverse()
+    inv_ortho_refl = ortho_refl.inverse()
 
-    mat_prod = ortho_refl.get_matrix() @ inv_ortho_refl_1.get_matrix()
+    mat_prod = ortho_refl.get_matrix() @ inv_ortho_refl.get_matrix()
 
     assert np.allclose(mat_prod, np.eye(3)), 'Inverse incorrect.'
 
