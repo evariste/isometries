@@ -1,7 +1,7 @@
 
 import sys
 import numpy as np
-from twor.geom.transform_2d import Rotation2D, OrthoRotation2D, OrthoReflection2D, compose_ortho_2d
+from twor.geom.transform_2d import Rotation2D, OrthoRotation2D, OrthoReflection2D, compose_ortho_2d, OrthoTransform2D, ortho2D_to_reflections
 from twor.geom.objects import Glyph2D, Line2D
 from twor.utils.general import apply_hom_matrix_to_points, apply_transform_sequence_to_glyph
 
@@ -28,32 +28,66 @@ def main():
 
     #############################################################################
 
+
+    #############################################################################
+
+    test_reflection_decomp()
+
+    #############################################################################
+
+    run_composition_tests()
+
+    #############################################################################
+
+    test_inverses()
+
+    #############################################################################
+
+
+    print('Done.')
+
+    return 0
+
+def test_reflection_decomp():
+
+    alpha = np.random.rand() * 2.0 * np.pi
+    # Random orthogonal rotation
+    ortho_rot = OrthoRotation2D(alpha)
+
+    glyph = Glyph2D()
+
+
+    # Decompose to reflections.
+    reflections = ortho_rot.get_reflections()
+
+    glyph_rotate = glyph.apply_transformation(ortho_rot)
+
+    glyph_2refls = apply_transform_sequence_to_glyph(reflections, glyph)
+
+    assert np.allclose(glyph_rotate.points, glyph_2refls.points), 'Results from reflections and direct orthogonal transformation do not match.'
+
+    # Decompose using general function
+    reflections_B = ortho2D_to_reflections(ortho_rot)
+
+    glyph_B = apply_transform_sequence_to_glyph(reflections_B, glyph)
+
+    assert np.allclose(glyph_rotate.points, glyph_B.points), 'Results from reflections and direct orthogonal transformation do not match.'
+
+
+    return
+
+
+def run_composition_tests():
+
+    alpha = np.random.rand() * 2.0 * np.pi
     # Random orthogonal rotation
     ortho_rot_1 = OrthoRotation2D(alpha)
 
-    #############################################################################
+    glyph = Glyph2D()
 
-    # Decompose to reflections.
-    reflections = ortho_rot_1.get_reflections()
-
-    glyph_rot_N = glyph.apply_transformation(ortho_rot_1)
-
-    glyph_2 = apply_transform_sequence_to_glyph(reflections, glyph)
-
-    assert np.allclose(glyph_rot_N.points, glyph_2.points), 'Results from reflections and direct orthogonal transformation do not match.'
-
-    #############################################################################
 
     # Compose rotation with itself.
-
-    ortho_comp_1 = compose_ortho_2d(ortho_rot_1, ortho_rot_1)
-
-    glyph_3 = glyph.apply_transformation(ortho_rot_1)
-    glyph_3 = glyph_3.apply_transformation(ortho_rot_1)
-
-    glyph_4 = glyph.apply_transformation(ortho_comp_1)
-
-    assert np.allclose(glyph_3.points, glyph_4.points), 'Composition result incorrect.'
+    test_composition(ortho_rot_1, ortho_rot_1, glyph)
 
     #############################################################################
     # Random reflection.
@@ -62,27 +96,13 @@ def main():
 
     #############################################################################
     # Rotation then random orthogonal reflection
+    test_composition(ortho_rot_1, ortho_refl_1, glyph)
 
-    ortho_comp_2 = compose_ortho_2d(ortho_rot_1, ortho_refl_1)
-
-    glyph_5 = glyph.apply_transformation(ortho_rot_1)
-    glyph_5 = glyph_5.apply_transformation(ortho_refl_1)
-
-    glyph_6 = glyph.apply_transformation(ortho_comp_2)
-
-    assert np.allclose(glyph_5.points, glyph_6.points), 'Composition result incorrect.'
-
-    #############################################################################
     # Orthogonal reflection then rotation
+    test_composition(ortho_refl_1, ortho_rot_1, glyph)
 
-    ortho_comp_3 = compose_ortho_2d(ortho_refl_1, ortho_rot_1)
-
-    glyph_7 = glyph.apply_transformation(ortho_refl_1)
-    glyph_7 = glyph_7.apply_transformation(ortho_rot_1)
-
-    glyph_8 = glyph.apply_transformation(ortho_comp_3)
-
-    assert np.allclose(glyph_7.points, glyph_8.points), 'Composition result incorrect.'
+    # Reflection with itself
+    test_composition(ortho_refl_1, ortho_refl_1, glyph)
 
     #############################################################################
     # Second random reflection.
@@ -90,57 +110,52 @@ def main():
     w = np.random.rand(2) - [0.5, 0.5]
     ortho_refl_2 = OrthoReflection2D(w)
 
-    #############################################################################
-
     # Compose two reflections
-    ortho_comp_4 = compose_ortho_2d(ortho_refl_1, ortho_refl_2)
+    test_composition(ortho_refl_1, ortho_refl_2, glyph)
 
-    glyph_9 = glyph.apply_transformation(ortho_refl_1)
-    glyph_9 = glyph_9.apply_transformation(ortho_refl_2)
+    return
 
-    glyph_10 = glyph.apply_transformation(ortho_comp_4)
+def test_composition(
+        ortho_T1: OrthoTransform2D,
+        ortho_T2: OrthoTransform2D,
+        glyph: Glyph2D
+):
 
-    assert np.allclose(glyph_9.points, glyph_10.points), 'Composition result incorrect.'
+    ortho_composition = compose_ortho_2d(ortho_T1, ortho_T2)
 
+    glyph_A = glyph.apply_transformation(ortho_T1)
+    glyph_A = glyph_A.apply_transformation(ortho_T2)
 
-    #############################################################################
+    glyph_B = glyph.apply_transformation(ortho_composition)
 
-    # Reflection with itself
-    ortho_comp_5 = compose_ortho_2d(ortho_refl_1, ortho_refl_1)
+    assert np.allclose(glyph_A.points, glyph_B.points), 'Composition result incorrect.'
 
-    glyph_11 = glyph.apply_transformation(ortho_refl_1)
-    glyph_11 = glyph_11.apply_transformation(ortho_refl_1)
+    return
 
-    glyph_12 = glyph.apply_transformation(ortho_comp_5)
+def test_inverses():
 
-    assert np.allclose(glyph_11.points, glyph_12.points), 'Composition result incorrect.'
+    alpha = np.random.rand() * 2.0 * np.pi
 
+    # Random orthogonal rotation
+    ortho_rot = OrthoRotation2D(alpha)
 
+    # Random reflection.
+    v = np.random.rand(2) - [0.5, 0.5]
+    ortho_refl = OrthoReflection2D(v)
 
-    #############################################################################
+    inv_ortho_rot_1 = ortho_rot.inverse()
 
-    # Inverses
-
-    inv_ortho_rot_1 = ortho_rot_1.inverse()
-
-    mat_prod = ortho_rot_1.get_matrix() @ inv_ortho_rot_1.get_matrix()
-
-    assert np.allclose(mat_prod, np.eye(3)), 'Inverse incorrect.'
-
-    inv_ortho_refl_1 = ortho_refl_1.inverse()
-
-    mat_prod = ortho_refl_1.get_matrix() @ inv_ortho_refl_1.get_matrix()
+    mat_prod = ortho_rot.get_matrix() @ inv_ortho_rot_1.get_matrix()
 
     assert np.allclose(mat_prod, np.eye(3)), 'Inverse incorrect.'
 
+    inv_ortho_refl_1 = ortho_refl.inverse()
 
-    #############################################################################
+    mat_prod = ortho_refl.get_matrix() @ inv_ortho_refl_1.get_matrix()
 
+    assert np.allclose(mat_prod, np.eye(3)), 'Inverse incorrect.'
 
-
-    print('Done.')
-
-    return 0
+    return
 
 
 if __name__ == '__main__':
