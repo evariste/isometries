@@ -22,13 +22,65 @@ class OrthoTransform2D(Transform2D, ABC):
         """
         Return one or two reflections for the orthogonal transformation.
         """
+def compose_2d(transf_a: Transform2D, transf_b: Transform2D):
+
+    M_a, t_a = transf_a.two_step_form()
+    M_b, t_b = transf_b.two_step_form()
+
+    # Application sequence (starting from the left:
+    # M_a t_a M_b t_b
+
+    # Flip the middle pair.
+    M_c, t_c = flip_two_step_form_2D([t_a, M_b])
+
+    # Sequence is now
+    # M_a M_c t_c t_b
+
+    # We should have M_c == M_b
+    assert M_b.matrix_equals(M_c)
+
+    M_out = compose_ortho_2d(M_a, M_b)
+
+    v = ensure_vec([0, 0])
+    if is_translation2d(t_b):
+        v += t_b.vec
+    if is_translation2d(t_c):
+        v += t_c.vec
+
+
+    if np.allclose(v, [0, 0]):
+        return M_out
+
+    t_out = Translation2D(v)
+
+    if isinstance(M_out, OrthoReflection2D):
+        result = Reflection2D.from_two_step_form(M_out, t_out)
+    elif isinstance(M_out, OrthoRotation2D):
+        result = Rotation2D.from_two_step_form(M_out, t_out)
+    else:
+        raise Exception('Unexpected type for transform M_out')
+
+    return result
+
+
+
 
 def compose_ortho_2d(t_a: OrthoTransform2D, t_b: OrthoTransform2D):
     """
     Compose a pair of orthogonal 2D transformations.
     """
+    refls = []
+    if not is_identity(t_a):
+        refls += t_a.get_reflections()
 
-    refls = t_a.get_reflections() + t_b.get_reflections()
+    if not is_identity(t_b):
+        refls += t_b.get_reflections()
+
+    if len(refls) == 0:
+        return Identity(2)
+
+    if len(refls) == 1:
+        return refls[0]
 
     assert 1 < len(refls) < 5, 'Unexpected number of reflections'
 
@@ -124,7 +176,7 @@ def flip_two_step_form_2D(two_step_transf):
         return [t1, I]
 
     if is_identity(t1):
-        return [t1, I]
+        return [I, t0]
 
     # Neither t0, nor t1, are the identity.
 
@@ -253,6 +305,13 @@ class OrthoReflection2D(OrthoTransform2D):
         I = Identity(2)
         return [M, I]
 
+    @classmethod
+    def from_two_step_form(cls, M, t):
+        assert is_identity(t), 'Expect no translation.'
+        assert isinstance(M, OrthoReflection2D), 'Expect first transform to be orthogonal reflection.'
+        return OrthoReflection2D(M.direction)
+
+
     def get_reflections(self):
         M = OrthoReflection2D(self.direction)
         return [M]
@@ -280,6 +339,51 @@ class Reflection2D(Transform2D):
         t = Translation2D(u)
         M = OrthoReflection2D(self.direction)
         return [M, t]
+
+    @classmethod
+    def from_two_step_form(cls, M, t):
+        """
+        M: First transform of two-steps. Orthogonal reflection or identity.
+        t: Second step. Translation or identity.
+
+        Make a general reflection object from the above.
+        """
+
+        if is_identity(M):
+            return t
+
+        if is_identity(t):
+            return M
+
+        assert isinstance(M, OrthoReflection2D), 'Expect first transform to be an orthogonal reflection.'
+        assert is_translation2d(t), 'Expect second transform to be a translation.'
+
+        # Origin.
+        O = ensure_vec([0, 0])
+
+        # Image of O under the transformation.
+        P = t.apply(M.apply(O))
+
+        if np.allclose(O, P):
+            # Origin is on the plane of reflection.
+            # Transform is orthogonal.
+            return M
+
+        # O and P are distinct.
+
+        # Point on reflection line.
+        Q = 0.5 * (O + P)
+
+        # Normal to reflection line.
+        normal_dir = P
+        x, y = normal_dir
+        line_dir = ensure_vec([-1.0 * y, x])
+
+        # Line of reflection.
+        line = Line2D(Q, line_dir)
+
+        return Reflection2D(line)
+
 
     def apply(self, points):
 
@@ -384,6 +488,12 @@ class OrthoRotation2D(OrthoTransform2D):
         I = Identity(2)
         return [M, I]
 
+    @classmethod
+    def from_two_step_form(cls, M, t):
+        assert is_identity(t), 'Expect no translation.'
+        assert isinstance(M, OrthoRotation2D), 'Expect first transform to be orthogonal rotation.'
+        return OrthoRotation2D(M.angle)
+
     def get_reflections(self):
         return [self.refl_1, self.refl_2]
 
@@ -410,6 +520,66 @@ class Rotation2D(Transform2D):
         t = Translation2D(u)
 
         return [M, t]
+
+    @classmethod
+    def from_two_step_form(cls, M, t):
+        """
+        M: First transform of two-steps. Orthogonal rotation or identity.
+        t: Second step. Translation or identity.
+
+        Make a general rotation object from the above.
+        """
+
+        if is_identity(M):
+            return t
+
+        if is_identity(t):
+            return M
+
+        assert isinstance(M, OrthoRotation2D), 'Expect first transform to be a rotation.'
+        assert isinstance(t, Translation2D), 'Expect second transform to be a translation.'
+
+        # Origin.
+        O = ensure_vec([0, 0])
+
+        # Image of O under the transformation.
+        P = t.apply(M.apply(O))
+
+        if np.allclose(O, P):
+            # Origin is fixed the composition of M and t.
+            # Axis passes through O, result is orthogonal.
+            return M
+
+        # O and P are distinct.
+
+        # Image of P under the transformation.
+        Q = t.apply(M.apply(P))
+
+        if np.allclose(O, Q):
+            # Transformation is a half-turn.
+            # Centre is half way between O and P
+            C = 0.5 * (O + P)
+            angle = np.pi
+            return Rotation2D(C, angle)
+
+        assert not np.allclose(P, Q), 'This should not happen!'
+
+        A = 0.5 * (O + P)
+        x, y = P
+        line_dir_A = ensure_vec([-1.0 * y, x])
+        line_A = Line2D(A, line_dir_A)
+
+        B = 0.5 * (P + Q)
+        x, y = Q - P
+        line_dir_B = ensure_vec([-1.0 * y, x])
+        line_B = Line2D(B, line_dir_B)
+
+        C = line_A.intersection(line_B)
+
+        angle = line_A.angle_to(line_B)
+
+        return Rotation2D(C, angle)
+
 
 
     @classmethod
@@ -525,3 +695,8 @@ class Translation2D(Transform):
         t = Translation2D(self.vec)
         return [I, t]
 
+    @classmethod
+    def from_two_step_form(cls, M, t):
+        assert is_identity(M), 'Expect first transform to be identity.'
+        assert is_translation2d(t), 'Expect second transform to be a translation.'
+        return Translation2D(t.vec)

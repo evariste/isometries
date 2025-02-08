@@ -41,6 +41,19 @@ class Transform(ABC):
         transformaation first then the translation second.
         """
 
+    @classmethod
+    @abstractmethod
+    def from_two_step_form(cls, M, t):
+        """
+        Given an orthogonal transform M (first) then a translation t,
+        return a single transform object.
+        """
+
+    def matrix_equals(self, other: Transform):
+        M = self.get_matrix()
+        N = other.get_matrix()
+        return np.allclose(M, N)
+
 
 class Identity(Transform):
     def __init__(self, dimension):
@@ -56,3 +69,9 @@ class Identity(Transform):
 
     def two_step_form(self):
         return [Identity(2), Identity(2)]
+
+    @classmethod
+    def from_two_step_form(cls, M, t):
+        assert isinstance(M, Identity), 'Expect first and second transform to be identity.'
+        assert isinstance(t, Identity), 'Expect first and second transform to be identity.'
+        return Identity(M.dim)
