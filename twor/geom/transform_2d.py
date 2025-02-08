@@ -24,6 +24,9 @@ class OrthoTransform2D(Transform2D, ABC):
         """
 
 def compose_ortho_2d(t_a: OrthoTransform2D, t_b: OrthoTransform2D):
+    """
+    Compose a pair of orthogonal 2D transformations.
+    """
 
     refls = t_a.get_reflections() + t_b.get_reflections()
 
@@ -57,6 +60,39 @@ def compose_ortho_2d(t_a: OrthoTransform2D, t_b: OrthoTransform2D):
     # Second and third have been cancelled.
     l3 = lines[3]
     return OrthoRotation2D.from_lines(l0_rot, l3)
+
+
+def ortho2D_to_reflections(ortho2d_transf: OrthoTransform2D):
+    """
+    Break up a generic orthogonal 2D transform into a sequence of
+    reflections.
+    """
+
+    xy = validate_pts([[1, 0], [0, 1]])
+    x = xy[:, [0]]
+    y = xy[:, [1]]
+
+    uv = ortho2d_transf.apply(xy)
+    u = uv[:, [0]]
+    v = uv[:, [1]]
+
+    if np.allclose(u, x):
+        R1 = Identity(2)
+    else:
+        # Reflect in a line that goes half way between x and u
+        l = Line2D([0, 0], x + u)
+        R1 = Reflection2D(l)
+
+    if np.allclose(v, R1.apply(v)):
+        return [R1]
+
+    l = Line2D([0, 0], u)
+    R2 = Reflection2D(l)
+
+    assert np.allclose(R2.apply(R1.apply(x)), u), 'Error in reflections'
+    assert np.allclose(R2.apply(R1.apply(y)), v), 'Error in reflections'
+
+    return [R1, R2]
 
 
 class OrthoReflection2D(OrthoTransform2D):
@@ -180,12 +216,12 @@ class OrthoRotation2D(OrthoTransform2D):
 
         self.angle = wrap_angle_minus_pi_to_pi(angle)
 
-        # Set up a pair of reflections that can be used
+        # Set up an initial pair of reflections that can be used
         # to execute this rotation.
         half_angle = self.angle / 2.0
 
-        self.ref_1 = OrthoReflection2D([1, 0])
-        self.ref_2 = OrthoReflection2D.from_angle(half_angle)
+        self.refl_1 = OrthoReflection2D([1, 0])
+        self.refl_2 = OrthoReflection2D.from_angle(half_angle)
 
         return
 
@@ -204,6 +240,9 @@ class OrthoRotation2D(OrthoTransform2D):
         alpha = 2.0 * (theta_2 - theta_1)
         return OrthoRotation2D(alpha)
 
+    @classmethod
+    def from_reflections(cls, refl_1: Reflection2D, refl_2: Reflection2D):
+        return OrthoRotation2D.from_lines(refl_1.line, refl_2.line)
 
     def inverse(self):
         refls = self.get_reflections()
@@ -216,8 +255,8 @@ class OrthoRotation2D(OrthoTransform2D):
         pts = validate_pts(points)
 
         # Apply the pair of reflections
-        pts = self.ref_1.apply(pts)
-        pts = self.ref_2.apply(pts)
+        pts = self.refl_1.apply(pts)
+        pts = self.refl_2.apply(pts)
 
         return pts
 
@@ -240,33 +279,8 @@ class OrthoRotation2D(OrthoTransform2D):
         return [M, I]
 
     def get_reflections(self):
+        return [self.refl_1, self.refl_2]
 
-        xy = validate_pts([[1, 0], [0, 1]])
-        x = xy[:, [0]]
-        y = xy[:, [1]]
-
-        uv = self.apply(xy)
-        u = uv[:, [0]]
-        v = uv[:, [1]]
-
-        if np.allclose(u, x):
-            R1 = Identity(2)
-        else:
-            # Reflect in a line that goes half way between x and u
-            l = Line2D([0, 0], x + u)
-            R1 = Reflection2D(l)
-
-
-        if np.allclose(v, R1.apply(v)):
-            return [R1]
-
-        l = Line2D([0, 0], u)
-        R2 = Reflection2D(l)
-
-        assert np.allclose(R2.apply(R1.apply(x)), u), 'Error in reflections'
-        assert np.allclose(R2.apply(R1.apply(y)), v), 'Error in reflections'
-
-        return [R1, R2]
 
 class Rotation2D(Transform2D):
 
