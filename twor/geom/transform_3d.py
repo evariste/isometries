@@ -32,6 +32,11 @@ class Translation3D(Transform):
         t = Translation3D(self.vec)
         return [I, t]
 
+    @classmethod
+    def from_two_step_form(cls, M, t):
+        # TODO
+        pass
+
     def __repr__(self):
         v = np.round(self.vec.flatten(), 2)
         return f'Translation3D(\n {v}\n)'
@@ -66,6 +71,11 @@ class Reflection3D(Transform):
         return ret
 
     def two_step_form(self):
+        # TODO
+        pass
+
+    @classmethod
+    def from_two_step_form(cls, M, t):
         # TODO
         pass
 
@@ -137,6 +147,11 @@ class OriginRotation3D(Transform):
         return
 
     def two_step_form(self):
+        # TODO
+        pass
+
+    @classmethod
+    def from_two_step_form(cls, M, t):
         # TODO
         pass
 
@@ -254,6 +269,10 @@ class Rotation3D(Transform):
         # TODO
         pass
 
+    @classmethod
+    def from_two_step_form(cls, M, t):
+        # TODO
+        pass
 
     def to_trans_origin_rot(self):
         vec = self.point - self.orig_rot.apply(self.point)
@@ -352,6 +371,10 @@ class TransOriginRotation3D(Transform):
         # TODO
         pass
 
+    @classmethod
+    def from_two_step_form(cls, M, t):
+        # TODO
+        pass
 
     def get_matrix(self):
         M = self.origin_rot.get_matrix()
@@ -398,6 +421,11 @@ class TransRotation3D(Transform):
         return cls(pt, ax, ang, v)
 
     def two_step_form(self):
+        # TODO
+        pass
+
+    @classmethod
+    def from_two_step_form(cls, M, t):
         # TODO
         pass
 
