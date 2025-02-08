@@ -3,6 +3,7 @@ from __future__ import annotations
 import numpy as np
 from quaternion import quaternion
 from abc import ABC, abstractmethod
+from typing import List
 from twor.utils.general import (
     ensure_unit_vec, ensure_vec, validate_pts, wrap_angle_minus_pi_to_pi, rotate_vector, cross_product,
     angle_between_vectors, vecs_parallel, rotation_matrix_from_axis_and_angle
@@ -12,6 +13,14 @@ from twor.geom.objects import Plane3D
 
 class Transform3D(Transform, ABC):
     pass
+
+class OrthoTransform2D(Transform3D, ABC):
+
+    @abstractmethod
+    def get_reflections(self) -> List[OrthoReflection3D]:
+        """
+        Return one or two reflections for the orthogonal transformation.
+        """
 
 
 class Translation3D(Transform3D):
@@ -43,6 +52,172 @@ class Translation3D(Transform3D):
     def __repr__(self):
         v = np.round(self.vec.flatten(), 2)
         return f'Translation3D(\n {v}\n)'
+
+
+class OrthoReflection3D(OrthoTransform2D):
+
+    def __init__(self):
+        super(OrthoReflection3D, self).__init__()
+
+        return
+
+    def get_reflections(self):
+        # TODO:
+        pass
+
+    def two_step_form(self):
+        # TODO
+        pass
+
+    @classmethod
+    def from_two_step_form(cls, M, t):
+        # TODO
+        pass
+
+    def apply(self, points):
+        # TODO:
+        pass
+
+    def get_matrix(self):
+        # TODO:
+        pass
+
+class OrthoRotation3D(OrthoTransform2D):
+    """
+    Rotation about an axis going through (0, 0, 0).
+    """
+    def __init__(self, axis, angle):
+
+        super().__init__()
+
+        self.axis = ensure_unit_vec(axis)
+        self.angle = wrap_angle_minus_pi_to_pi(angle)
+
+        origin = [0, 0, 0]
+        z_vec = [0, 0, 1]
+
+        axis_plane = Plane3D(self.axis, origin)
+        xy_plane = Plane3D(z_vec,  origin)
+
+        O = ensure_vec([0, 0, 0])
+
+        if axis_plane.parallel_to(xy_plane):
+            u = [1, 0, 0]
+            v = rotate_vector(u, self.axis, self.angle / 2.0)
+            plane_0 = Plane3D(u, O)
+            plane_1 = Plane3D(v, O)
+        else:
+            l = axis_plane.intersection(xy_plane)
+
+            assert l.contains_point(O), 'Unexpected line of intersection.'
+            l.set_start_point(O)
+
+            P = l(10)
+            Q = O + 10 * self.axis
+            R = rotate_vector(P, self.axis, self.angle / 2.0)
+
+            plane_0 = Plane3D.from_points(O, P, Q)
+            plane_1 = Plane3D.from_points(O, R, Q)
+
+        self.refl_0 = Reflection3D(plane_0)
+        self.refl_1 = Reflection3D(plane_1)
+
+        return
+
+    def two_step_form(self):
+        # TODO
+        pass
+
+    @classmethod
+    def from_two_step_form(cls, M, t):
+        # TODO
+        pass
+
+    def get_reflections(self):
+        # TODO:
+        pass
+
+
+    def to_quaternion(self):
+        v = self.axis
+        theta = self.angle
+
+        c = float(np.cos(theta / 2.0))
+        s = float(np.sin(theta / 2.0))
+
+        # sin(t / 2) v
+        sv = s * v.flatten()
+
+        q = quaternion(c, *sv)
+
+        return q
+
+    @classmethod
+    def from_planes(cls, plane_0: Plane3D, plane_1: Plane3D):
+        if plane_0.parallel_to(plane_1):
+            return cls([1, 0, 0], 0)
+
+        n_0 = plane_0.normal
+        n_1 = plane_1.normal
+
+        axis = cross_product(n_0, n_1)
+
+        theta = angle_between_vectors(n_0, n_1)
+
+        return cls(axis, 2.0 * theta)
+
+    def followed_by(self, other: OrthoRotation3D):
+
+        if vecs_parallel(self.axis, other.axis):
+            if np.allclose(self.axis, other.axis):
+                return OrthoRotation3D(self.axis, self.angle + other.angle)
+            else:
+                # Axes are opposing each other.
+                return OrthoRotation3D(self.axis, self.angle - other.angle)
+
+        O = ensure_vec([0, 0, 0])
+        P = 10 * self.axis
+        Q = 10 * other.axis
+        plane_shared = Plane3D.from_points(O, P, Q)
+        n_shared = plane_shared.normal
+
+        n_0 = rotate_vector(n_shared, self.axis, -0.5 * self.angle)
+
+        n_1 = rotate_vector(n_shared, other.axis, 0.5 * other.angle)
+
+        plane_0 = Plane3D(n_0, O)
+        plane_1 = Plane3D(n_1, O)
+
+        return OrthoRotation3D.from_planes(plane_0, plane_1)
+
+    def get_matrix(self):
+        """
+        Get a homogeneous matrix from the composed reflections.
+        """
+        M0 = self.refl_0.get_matrix()
+        M1 = self.refl_1.get_matrix()
+        return M1 @ M0
+
+    def get_matrix_B(self):
+        """
+        Get a homogeneous matrix via an external function.
+        """
+        R = rotation_matrix_from_axis_and_angle(self.axis, self.angle)
+        M = np.eye(4)
+        M[:3, :3] = R
+        return M
+
+    def apply(self, points):
+        pts = validate_pts(points)
+        pts = self.refl_0.apply(pts)
+        pts = self.refl_1.apply(pts)
+        return pts
+
+    def __repr__(self):
+        ax = np.round(self.axis.flatten(), 2)
+        ang = np.round(self.angle, 2)
+        return f'OriginRotation3D(\n {ax},\n {ang}\n)'
+
 
 
 class Reflection3D(Transform3D):
@@ -106,138 +281,6 @@ class Reflection3D(Transform3D):
         return f'Reflection3D(\n {normal},\n {pt}\n)'
 
 
-# TODO: Rename as OrthoRotation3D
-class OriginRotation3D(Transform3D):
-    """
-    Rotation about an axis going through (0, 0, 0).
-    """
-    def __init__(self, axis, angle):
-
-        super().__init__()
-
-        self.axis = ensure_unit_vec(axis)
-        self.angle = wrap_angle_minus_pi_to_pi(angle)
-
-        origin = [0, 0, 0]
-        z_vec = [0, 0, 1]
-
-        axis_plane = Plane3D(self.axis, origin)
-        xy_plane = Plane3D(z_vec,  origin)
-
-        O = ensure_vec([0, 0, 0])
-
-        if axis_plane.parallel_to(xy_plane):
-            u = [1, 0, 0]
-            v = rotate_vector(u, self.axis, self.angle / 2.0)
-            plane_0 = Plane3D(u, O)
-            plane_1 = Plane3D(v, O)
-        else:
-            l = axis_plane.intersection(xy_plane)
-
-            assert l.contains_point(O), 'Unexpected line of intersection.'
-            l.set_start_point(O)
-
-            P = l(10)
-            Q = O + 10 * self.axis
-            R = rotate_vector(P, self.axis, self.angle / 2.0)
-
-            plane_0 = Plane3D.from_points(O, P, Q)
-            plane_1 = Plane3D.from_points(O, R, Q)
-
-        self.refl_0 = Reflection3D(plane_0)
-        self.refl_1 = Reflection3D(plane_1)
-
-        return
-
-    def two_step_form(self):
-        # TODO
-        pass
-
-    @classmethod
-    def from_two_step_form(cls, M, t):
-        # TODO
-        pass
-
-    def to_quaternion(self):
-        v = self.axis
-        theta = self.angle
-
-        c = float(np.cos(theta / 2.0))
-        s = float(np.sin(theta / 2.0))
-
-        # sin(t / 2) v
-        sv = s * v.flatten()
-
-        q = quaternion(c, *sv)
-
-        return q
-
-    @classmethod
-    def from_planes(cls, plane_0: Plane3D, plane_1: Plane3D):
-        if plane_0.parallel_to(plane_1):
-            return cls([1, 0, 0], 0)
-
-        n_0 = plane_0.normal
-        n_1 = plane_1.normal
-
-        axis = cross_product(n_0, n_1)
-
-        theta = angle_between_vectors(n_0, n_1)
-
-        return cls(axis, 2.0 * theta)
-
-    def followed_by(self, other: OriginRotation3D):
-
-        if vecs_parallel(self.axis, other.axis):
-            if np.allclose(self.axis, other.axis):
-                return OriginRotation3D(self.axis, self.angle + other.angle)
-            else:
-                # Axes are opposing each other.
-                return OriginRotation3D(self.axis, self.angle - other.angle)
-
-        O = ensure_vec([0, 0, 0])
-        P = 10 * self.axis
-        Q = 10 * other.axis
-        plane_shared = Plane3D.from_points(O, P, Q)
-        n_shared = plane_shared.normal
-
-        n_0 = rotate_vector(n_shared, self.axis, -0.5 * self.angle)
-
-        n_1 = rotate_vector(n_shared, other.axis, 0.5 * other.angle)
-
-        plane_0 = Plane3D(n_0, O)
-        plane_1 = Plane3D(n_1, O)
-
-        return OriginRotation3D.from_planes(plane_0, plane_1)
-
-    def get_matrix(self):
-        """
-        Get a homogeneous matrix from the composed reflections.
-        """
-        M0 = self.refl_0.get_matrix()
-        M1 = self.refl_1.get_matrix()
-        return M1 @ M0
-
-    def get_matrix_B(self):
-        """
-        Get a homogeneous matrix via an external function.
-        """
-        R = rotation_matrix_from_axis_and_angle(self.axis, self.angle)
-        M = np.eye(4)
-        M[:3, :3] = R
-        return M
-
-    def apply(self, points):
-        pts = validate_pts(points)
-        pts = self.refl_0.apply(pts)
-        pts = self.refl_1.apply(pts)
-        return pts
-
-    def __repr__(self):
-        ax = np.round(self.axis.flatten(), 2)
-        ang = np.round(self.angle, 2)
-        return f'OriginRotation3D(\n {ax},\n {ang}\n)'
-
 class Rotation3D(Transform3D):
 
     def __init__(self, point, axis_dir, angle):
@@ -247,7 +290,7 @@ class Rotation3D(Transform3D):
         """
 
         super().__init__()
-        self.orig_rot = OriginRotation3D(axis_dir, angle)
+        self.orig_rot = OrthoRotation3D(axis_dir, angle)
         self.point = ensure_vec(point)
         self.T_inv = Translation3D(-1.0 * self.point)
         self.T = Translation3D(self.point)
@@ -322,13 +365,13 @@ class TransOriginRotation3D(Transform3D):
     """
     def __init__(self, transvector, axis, angle):
         super().__init__()
-        self.origin_rot = OriginRotation3D(axis, angle)
+        self.origin_rot = OrthoRotation3D(axis, angle)
         self.tra = Translation3D(transvector)
 
         return
 
     @classmethod
-    def from_transforms(cls, originRotation: OriginRotation3D, trans: Translation3D):
+    def from_transforms(cls, originRotation: OrthoRotation3D, trans: Translation3D):
         v = trans.vec
         ax = originRotation.axis
         ang = originRotation.angle
