@@ -53,3 +53,6 @@ class Identity(Transform):
 
     def get_matrix(self):
         return self.matrix
+
+    def two_step_form(self):
+        return [Identity(2), Identity(2)]
