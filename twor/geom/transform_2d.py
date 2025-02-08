@@ -97,6 +97,109 @@ def ortho2D_to_reflections(ortho2d_transf: OrthoTransform2D):
 
     return [R1, R2]
 
+def flip_two_step_form_2D(two_step_transf):
+    """
+    Given a two step form for a 2D transformation consisting of
+    a translation and orthogonal 2D transform, in some order,
+    return the equivalent two step form with order reversed.
+
+    Let M be an orthogonal transformation and t be a translation
+
+    The input two-step form either applies M first or t first.
+
+    Return the two-step form that reverses the order of application.
+
+    We represent a two step form by a length 2 list where the index of
+    the elements determines the order of application. E.g., [M, t]
+    means the orthogonal transformation is applied first.
+    """
+
+    assert len(two_step_transf) == 2, 'Unexpected length of two-step form.'
+
+    t0 = two_step_transf[0]
+    t1 = two_step_transf[1]
+    I = Identity(2)
+
+    if is_identity(t0):
+        return [t1, I]
+
+    if is_identity(t1):
+        return [t1, I]
+
+    # Neither t0, nor t1, are the identity.
+
+    if is_ortho2d(t0):
+        # Form should be [M, t]
+        assert is_translation2d(t1), 'Expect second tranform to be a translation.'
+        # Translation vector
+        p = t1.vec
+
+        # Alias for orthogonal part:
+        M = t0
+        M_inv = M.inverse()
+
+        q = M_inv.apply(p)
+
+        t_q = Translation2D(q)
+
+        return [t_q, M]
+
+    # First transformation is not orthogonal.
+    assert is_translation2d(t0), 'Expect first tranform to be a translation'
+    assert is_ortho2d(t1), 'Expect second transform to be orthogonal.'
+
+    # Form is [t, M]
+
+    # Translation vector
+    p = t0.vec
+
+    # Alias for orthogonal part
+    M = t1
+
+    q = M.apply(p)
+
+    t_q = Translation2D(q)
+
+    return [M, t_q]
+
+
+def is_identity(transf: Transform2D):
+    return isinstance(transf, Identity)
+
+def is_ortho2d(transf: Transform2D):
+    return isinstance(transf, OrthoTransform2D)
+
+def is_translation2d(transf: Transform2D):
+    return isinstance(transf, Translation2D)
+
+def random_reflection2d():
+    # Random general 2D reflection.
+    P = np.random.rand(2) * 10
+    v = np.random.rand(2)
+    line_1 = Line2D(P, v)
+    refl = Reflection2D(line_1)
+    return refl
+
+def random_rotation2d():
+    # Random general 2D rotation.
+    alpha = np.random.rand() * 2.0 * np.pi
+    C = np.random.rand(2) * 10
+    rot = Rotation2D(C, alpha)
+    return rot
+
+def random_ortho_rotation2d():
+    # Random orthogonal 2D rotation.
+    alpha = np.random.rand() * 2.0 * np.pi
+    # Random orthogonal rotation
+    ortho_rot = OrthoRotation2D(alpha)
+    return ortho_rot
+
+def random_ortho_reflection2d():
+    # Random orthogonal 2D reflection.
+    v = np.random.rand(2) - [0.5, 0.5]
+    ortho_refl = OrthoReflection2D(v)
+    return ortho_refl
+
 
 class OrthoReflection2D(OrthoTransform2D):
     """
