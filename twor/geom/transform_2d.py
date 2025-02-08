@@ -53,17 +53,28 @@ def compose_2d(transf_a: Transform2D, transf_b: Transform2D):
 
     t_out = Translation2D(v)
 
-    if isinstance(M_out, OrthoReflection2D):
-        result = Reflection2D.from_two_step_form(M_out, t_out)
-    elif isinstance(M_out, OrthoRotation2D):
-        result = Rotation2D.from_two_step_form(M_out, t_out)
+    return transf_2d_from_two_step(M_out, t_out)
+
+
+def transf_2d_from_two_step(M: OrthoTransform2D, t: Translation2D):
+    """
+    Generate a single tranform object from a two step form.
+    """
+
+    if isinstance(M, Identity):
+        return t
+
+    if isinstance(t, Identity):
+        return M
+
+    if isinstance(M, OrthoReflection2D):
+        result = Reflection2D.from_two_step_form(M, t)
+    elif isinstance(M, OrthoRotation2D):
+        result = Rotation2D.from_two_step_form(M, t)
     else:
-        raise Exception('Unexpected type for transform M_out')
+        raise Exception('Unexpected type for first transform M')
 
     return result
-
-
-
 
 def compose_ortho_2d(t_a: OrthoTransform2D, t_b: OrthoTransform2D):
     """
