@@ -50,7 +50,7 @@ def test_two_step_form():
 
     glyph_B = glyph.apply_transformation(N).apply_transformation(t)
 
-    assert np.allclose(glyph_B.points, glyph_refl.points), 'Two-step form gives different answer.'
+    assert glyph_B.is_close_to(glyph_refl), 'Two-step form gives different answer.'
 
     return
 

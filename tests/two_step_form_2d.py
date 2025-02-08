@@ -42,10 +42,7 @@ def test_two_step_form(transf: Transform2D):
     # Transform in two steps.
     glyph_B = glyph.apply_transformation(M).apply_transformation(t)
 
-    pts_A = glyph_A.points
-    pts_B = glyph_B.points
-
-    assert np.allclose(pts_A, pts_B), 'Two step form does not match original transform.'
+    assert glyph_A.is_close_to(glyph_B), 'Two step form does not match original transform.'
 
     return
 

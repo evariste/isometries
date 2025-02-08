@@ -218,6 +218,19 @@ class Glyph3D(object):
         else:
             return Glyph3D(new_points)
 
+    def is_close_to(self, other_glyph: Glyph3D):
+
+        other_pts = other_glyph.points
+        n_other_pts = len(other_pts)
+
+        n_pts = len(self.points)
+
+        if not n_pts == n_other_pts:
+            return False
+
+        return np.allclose(self.points, other_pts)
+
+
 
 class Glyph2D(object):
     default_points = np.asarray(
@@ -263,6 +276,18 @@ class Glyph2D(object):
         y1 = max_vals[1]
 
         return x0, y0, x1, y1
+
+    def is_close_to(self, other_glyph: Glyph2D):
+
+        other_pts = other_glyph.points
+        n_other_pts = len(other_pts)
+
+        n_pts = len(self.points)
+
+        if not n_pts == n_other_pts:
+            return False
+
+        return np.allclose(self.points, other_pts)
 
 
 def get_glyph_bounds(glyphs):

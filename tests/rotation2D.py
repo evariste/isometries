@@ -52,14 +52,14 @@ def test_reflection_decomp():
 
     glyph_2refls = apply_transform_sequence_to_glyph(reflections, glyph)
 
-    assert np.allclose(glyph_rotate.points, glyph_2refls.points), 'Results from reflections and direct orthogonal transformation do not match.'
+    assert glyph_rotate.is_close_to(glyph_2refls), 'Results from reflections and direct orthogonal transformation do not match.'
 
     # Decompose using general function
     reflections_B = ortho2D_to_reflections(ortho_rot)
 
     glyph_B = apply_transform_sequence_to_glyph(reflections_B, glyph)
 
-    assert np.allclose(glyph_rotate.points, glyph_B.points), 'Results from reflections and direct orthogonal transformation do not match.'
+    assert glyph_rotate.is_close_to(glyph_B), 'Results from reflections and direct orthogonal transformation do not match.'
 
 
     # Random reflection.
@@ -73,7 +73,7 @@ def test_reflection_decomp():
 
     glyph_C = glyph.apply_transformation(refl_C)
     glyph_D = glyph.apply_transformation(ortho_refl)
-    assert np.allclose(glyph_C.points, glyph_D.points), 'Results from reflections and direct orthogonal transformation do not match.'
+    assert glyph_C.is_close_to(glyph_D), 'Results from reflections and direct orthogonal transformation do not match.'
 
 
     return
@@ -129,7 +129,7 @@ def test_composition(
 
     glyph_B = glyph.apply_transformation(ortho_composition)
 
-    assert np.allclose(glyph_A.points, glyph_B.points), 'Composition result incorrect.'
+    assert glyph_A.is_close_to(glyph_B), 'Composition result incorrect.'
 
     return
 
