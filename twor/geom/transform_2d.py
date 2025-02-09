@@ -90,6 +90,99 @@ class OrthoReflection2D(OrthoTransform2D):
         M = OrthoReflection2D(self.direction)
         return [M]
 
+
+
+
+class OrthoRotation2D(OrthoTransform2D):
+
+    def __init__(self, angle):
+
+        super().__init__()
+
+        self.angle = wrap_angle_minus_pi_to_pi(angle)
+
+        # Set up an initial pair of reflections that can be used
+        # to execute this rotation.
+        half_angle = self.angle / 2.0
+
+        self.refl_1 = OrthoReflection2D([1, 0])
+        self.refl_2 = OrthoReflection2D.from_angle(half_angle)
+
+        return
+
+    @classmethod
+    def from_lines(cls, line_1: Line2D, line_2: Line2D):
+
+        assert np.isclose(line_1.f_x(0), 0.0), 'Line must intersect origin.'
+        assert np.isclose(line_2.f_x(0), 0.0), 'Line must intersect origin.'
+
+        dir_1 = line_1.direction
+        dir_2 = line_2.direction
+
+        theta_1 = np.arctan2(dir_1[1], dir_1[0])
+        theta_2 = np.arctan2(dir_2[1], dir_2[0])
+
+        alpha = 2.0 * (theta_2 - theta_1)
+        alpha = wrap_angle_minus_pi_to_pi(alpha)
+
+        if np.isclose(np.abs(alpha), 0) or np.isclose(np.abs(alpha), np.pi):
+            return Identity(2)
+
+        return OrthoRotation2D(alpha)
+
+    @classmethod
+    def from_reflections(cls, refl_1: Reflection2D, refl_2: Reflection2D):
+        return OrthoRotation2D.from_lines(refl_1.line, refl_2.line)
+
+    def inverse(self):
+        refls = self.get_reflections()
+        lines = [r.line for r in refls]
+        l0, l1 = lines
+        return self.from_lines(l1, l0)
+
+
+    def apply(self, points):
+        pts = validate_pts(points)
+
+        # Apply the pair of reflections
+        pts = self.refl_1.apply(pts)
+        pts = self.refl_2.apply(pts)
+
+        return pts
+
+    def get_matrix(self):
+        M = np.eye(3)
+        c = np.cos(self.angle)
+        s = np.sin(self.angle)
+        R = np.asarray([
+            [c, -1.0 * s],
+            [s, c]
+        ])
+
+        M[:2, :2] = R.squeeze()
+
+        return M
+
+    def two_step_form(self):
+        M = OrthoRotation2D(self.angle)
+        I = Identity(2)
+        return [M, I]
+
+    @classmethod
+    def from_two_step_form(cls, M, t):
+        assert is_identity(t), 'Expect no translation.'
+
+        if is_identity(M):
+            return Identity(2)
+
+        assert isinstance(M, OrthoRotation2D), 'Expect first transform to be orthogonal rotation.'
+        return OrthoRotation2D(M.angle)
+
+    def get_reflections(self):
+        return [self.refl_1, self.refl_2]
+
+
+
 class Reflection2D(Transform2D):
     """
     Reflection in 2-D.
@@ -192,93 +285,6 @@ class Reflection2D(Transform2D):
         direction = np.round(self.line.direction.flatten(), 2)
         return f'Reflection2D(\n {pt},\n {direction}\n)'
 
-class OrthoRotation2D(OrthoTransform2D):
-
-    def __init__(self, angle):
-
-        super().__init__()
-
-        self.angle = wrap_angle_minus_pi_to_pi(angle)
-
-        # Set up an initial pair of reflections that can be used
-        # to execute this rotation.
-        half_angle = self.angle / 2.0
-
-        self.refl_1 = OrthoReflection2D([1, 0])
-        self.refl_2 = OrthoReflection2D.from_angle(half_angle)
-
-        return
-
-    @classmethod
-    def from_lines(cls, line_1: Line2D, line_2: Line2D):
-
-        assert np.isclose(line_1.f_x(0), 0.0), 'Line must intersect origin.'
-        assert np.isclose(line_2.f_x(0), 0.0), 'Line must intersect origin.'
-
-        dir_1 = line_1.direction
-        dir_2 = line_2.direction
-
-        theta_1 = np.arctan2(dir_1[1], dir_1[0])
-        theta_2 = np.arctan2(dir_2[1], dir_2[0])
-
-        alpha = 2.0 * (theta_2 - theta_1)
-        alpha = wrap_angle_minus_pi_to_pi(alpha)
-
-        if np.isclose(np.abs(alpha), 0) or np.isclose(np.abs(alpha), np.pi):
-            return Identity(2)
-
-        return OrthoRotation2D(alpha)
-
-    @classmethod
-    def from_reflections(cls, refl_1: Reflection2D, refl_2: Reflection2D):
-        return OrthoRotation2D.from_lines(refl_1.line, refl_2.line)
-
-    def inverse(self):
-        refls = self.get_reflections()
-        lines = [r.line for r in refls]
-        l0, l1 = lines
-        return self.from_lines(l1, l0)
-
-
-    def apply(self, points):
-        pts = validate_pts(points)
-
-        # Apply the pair of reflections
-        pts = self.refl_1.apply(pts)
-        pts = self.refl_2.apply(pts)
-
-        return pts
-
-    def get_matrix(self):
-        M = np.eye(3)
-        c = np.cos(self.angle)
-        s = np.sin(self.angle)
-        R = np.asarray([
-            [c, -1.0 * s],
-            [s, c]
-        ])
-
-        M[:2, :2] = R.squeeze()
-
-        return M
-
-    def two_step_form(self):
-        M = OrthoRotation2D(self.angle)
-        I = Identity(2)
-        return [M, I]
-
-    @classmethod
-    def from_two_step_form(cls, M, t):
-        assert is_identity(t), 'Expect no translation.'
-
-        if is_identity(M):
-            return Identity(2)
-
-        assert isinstance(M, OrthoRotation2D), 'Expect first transform to be orthogonal rotation.'
-        return OrthoRotation2D(M.angle)
-
-    def get_reflections(self):
-        return [self.refl_1, self.refl_2]
 
 
 class Rotation2D(Transform2D):
