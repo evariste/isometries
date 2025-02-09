@@ -2,7 +2,7 @@ import sys
 import numpy as np
 
 from twor.geom.objects import Glyph2D
-from twor.geom.transform_2d import random_reflection_2d
+from twor.geom.transform_2d import random_reflection_2d, random_ortho_reflection_2d
 from twor.utils.general import apply_hom_matrix_to_points
 
 def main():
@@ -12,6 +12,8 @@ def main():
     test_two_step_form()
 
     test_composition()
+
+    test_inverses()
 
     return 0
 
@@ -69,6 +71,18 @@ def test_composition():
 
     return
 
+def test_inverses():
+
+    # Random orthogonal reflection.
+    ortho_refl = random_ortho_reflection_2d()
+
+    inv_ortho_refl = ortho_refl.inverse()
+
+    mat_prod = ortho_refl.get_matrix() @ inv_ortho_refl.get_matrix()
+
+    assert np.allclose(mat_prod, np.eye(3)), 'Inverse incorrect.'
+
+    return
 
 
 if __name__ == '__main__':

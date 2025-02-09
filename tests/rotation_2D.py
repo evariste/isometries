@@ -1,9 +1,10 @@
 
 import sys
 import numpy as np
+
 from twor.geom.transform_2d import (
     OrthoReflection2D, compose_ortho_2d, OrthoTransform2D, ortho2D_to_reflections,
-    random_rotation_2d, random_ortho_rotation_2d, random_ortho_reflection_2d
+    random_rotation_2d, random_ortho_rotation_2d, OrthoRotation2D
 )
 from twor.geom.objects import Glyph2D
 from twor.utils.general import apply_hom_matrix_to_points, apply_transform_sequence_to_glyph
@@ -138,20 +139,16 @@ def test_inverses():
     # Random orthogonal rotation.
     ortho_rot = random_ortho_rotation_2d()
 
-    # Random orthogonal reflection.
-    ortho_refl = random_ortho_reflection_2d()
-
     inv_ortho_rot = ortho_rot.inverse()
 
     mat_prod = ortho_rot.get_matrix() @ inv_ortho_rot.get_matrix()
 
     assert np.allclose(mat_prod, np.eye(3)), 'Inverse incorrect.'
 
-    inv_ortho_refl = ortho_refl.inverse()
+    theta = ortho_rot.angle
+    ortho_rot_B = OrthoRotation2D(-1.0 * theta)
 
-    mat_prod = ortho_refl.get_matrix() @ inv_ortho_refl.get_matrix()
-
-    assert np.allclose(mat_prod, np.eye(3)), 'Inverse incorrect.'
+    assert inv_ortho_rot.matrix_equals(ortho_rot_B), 'Expect same inverse.'
 
     return
 
