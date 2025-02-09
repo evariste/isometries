@@ -14,7 +14,7 @@ from twor.geom.objects import Plane3D
 class Transform3D(Transform, ABC):
     pass
 
-class OrthoTransform2D(Transform3D, ABC):
+class OrthoTransform3D(Transform3D, ABC):
 
     @abstractmethod
     def get_reflections(self) -> List[OrthoReflection3D]:
@@ -22,10 +22,21 @@ class OrthoTransform2D(Transform3D, ABC):
         Return one or two reflections for the orthogonal transformation.
         """
 
-class OrthoReflection3D(OrthoTransform2D):
+class OrthoReflection3D(OrthoTransform3D):
+    """
+    Reflection in a plane through the origin.
+    """
 
-    def __init__(self):
+    def __init__(self, normal):
+        """
+        normal is the plane normal.
+        """
+
         super(OrthoReflection3D, self).__init__()
+
+        self.normal = ensure_unit_vec(normal)
+        self.plane = Plane3D(self.normal, [0, 0, 0])
+
 
         return
 
@@ -43,14 +54,21 @@ class OrthoReflection3D(OrthoTransform2D):
         pass
 
     def apply(self, points):
-        # TODO:
-        pass
+
+        pts = validate_pts(points)
+        n = self.normal
+
+        # Component of points in normal direction.
+        comp_norm = n @ (n.T @ pts)
+        ret = pts - 2 * comp_norm
+        return ret
+
 
     def get_matrix(self):
         # TODO:
         pass
 
-class OrthoRotation3D(OrthoTransform2D):
+class OrthoRotation3D(OrthoTransform3D):
     """
     Rotation about an axis going through (0, 0, 0).
     """
@@ -185,6 +203,38 @@ class OrthoRotation3D(OrthoTransform2D):
         ax = np.round(self.axis.flatten(), 2)
         ang = np.round(self.angle, 2)
         return f'OriginRotation3D(\n {ax},\n {ang}\n)'
+
+
+class OrthoImproperRotation(OrthoTransform3D):
+
+    def __init__(self):
+
+        super(OrthoImproperRotation, self).__init__()
+
+        return
+
+    def two_step_form(self):
+        # TODO
+        pass
+
+    def apply(self, points):
+        # TODO
+        pass
+
+    def get_matrix(self):
+        # TODO
+        pass
+
+    def get_reflections(self):
+        # TODO
+        pass
+
+    @classmethod
+    def from_two_step_form(cls, M, t):
+        # TODO
+        pass
+
+
 
 
 
