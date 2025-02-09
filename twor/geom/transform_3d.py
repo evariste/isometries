@@ -41,12 +41,13 @@ class OrthoReflection3D(OrthoTransform3D):
         return
 
     def get_reflections(self):
-        # TODO:
-        pass
+        M = OrthoReflection3D(self.normal)
+        return [M]
 
     def two_step_form(self):
-        # TODO
-        pass
+        M = OrthoReflection3D(self.normal)
+        I = Identity(3)
+        return [M, I]
 
     @classmethod
     def from_two_step_form(cls, M, t):
