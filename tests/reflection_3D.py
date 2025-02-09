@@ -30,6 +30,15 @@ def test_matrices():
 
     assert np.allclose(pts_B, pts_C), 'Result from matrix multiplication differ'
 
+    refl = random_reflection_3d()
+
+    M_refl = refl.get_matrix()
+
+    pts_D = glyph.apply_transformation(refl).points
+
+    pts_E = apply_hom_matrix_to_points(M_refl, pts)
+
+    assert np.allclose(pts_D, pts_E),  'Result from matrix multiplication differ'
 
     return
 

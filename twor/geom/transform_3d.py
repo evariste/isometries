@@ -4,6 +4,7 @@ import numpy as np
 from quaternion import quaternion
 from abc import ABC, abstractmethod
 from typing import List
+
 from twor.utils.general import (
     ensure_unit_vec, ensure_vec, validate_pts, wrap_angle_minus_pi_to_pi, rotate_vector, cross_product,
     angle_between_vectors, vecs_parallel, rotation_matrix_from_axis_and_angle
@@ -67,7 +68,6 @@ class OrthoReflection3D(OrthoTransform3D):
 
     def get_matrix(self):
 
-        n = self.normal
         M = np.eye(4)
 
         I = np.eye(3)
@@ -257,30 +257,34 @@ class Reflection3D(Transform3D):
         super().__init__()
 
         self.plane = plane
-        # TODO: Implement with an OrthoReflection3D
+
+        self.ortho_reflection = OrthoReflection3D(self.plane.normal)
+
+        self.point = self.plane.point
 
         return
 
 
     def apply(self, points):
 
+        p = self.point
+        T = Translation3D(p)
+        T_inv = Translation3D(-1.0 * p)
+
         pts = validate_pts(points)
 
-        X = self.plane.point
-        n = self.plane.normal
+        pts = T_inv.apply(pts)
+        pts = self.ortho_reflection.apply(pts)
+        pts = T.apply(pts)
 
-        disps = pts - X
+        return pts
 
-        coeff_norm = n.T @ disps
-
-        comp_norm = n @ coeff_norm
-
-        ret = disps - 2 * comp_norm + X
-
-        return ret
 
     def two_step_form(self):
         # TODO
+        # q = self.ortho apply p
+        # v = p - q
+        # return self.ortho, t_v
         pass
 
     @classmethod
@@ -291,25 +295,18 @@ class Reflection3D(Transform3D):
     def get_matrix(self):
 
         pt = self.plane.point
-        n = self.plane.normal
 
         T_inv = Translation3D(-1.0 * pt).get_matrix()
         T = Translation3D(pt).get_matrix()
 
-        M = np.eye(4)
+        M = self.ortho_reflection.get_matrix()
 
-        I3 = np.eye(3)
-        coeff = n.T @ I3
-        comp_norm = n @ coeff
-        M[:3, :3] = I3 - 2 * comp_norm
-
-        H = T @ M @ T_inv
-        return H
+        return T @ M @ T_inv
 
     def __repr__(self):
         normal = np.round(self.plane.normal.flatten(), 2).tolist()
         pt = np.round(self.plane.point.flatten(), 2).tolist()
-        return f'Reflection3D(\n {normal},\n {pt}\n)'
+        return f'Reflection3D(\n Plane3D(\n {normal},\n {pt}\n))'
 
 
 class Rotation3D(Transform3D):
@@ -605,7 +602,7 @@ class Translation3D(Transform3D):
 
 
 def random_ortho_reflection_3d():
-    # Random orthogonal 2D reflection.
+    # Random orthogonal 3D reflection.
     # Hacky method.
     v = np.random.rand(3) - [0.5, 0.5, 0.5]
     ortho_refl = OrthoReflection3D(v)
@@ -613,5 +610,10 @@ def random_ortho_reflection_3d():
 
 
 def random_reflection_3d():
+    # Random general 3D reflection.
+    # Hacky method.
+    n = np.random.rand(3) - [0.5, 0.5, 0.5]
+    P = np.random.rand(3) * 10
+    plane = Plane3D(n, P)
+    return Reflection3D(plane)
 
-    pass
