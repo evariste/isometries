@@ -10,7 +10,7 @@ from twor.utils.general import (
     angle_between_vectors, vecs_parallel, rotation_matrix_from_axis_and_angle, rotate_vectors_3d
 )
 from twor.geom.transform import Transform, Identity, is_identity
-from twor.geom.objects import Plane3D
+from twor.geom.objects import Plane3D, Line3D
 
 class Transform3D(Transform, ABC):
     pass
@@ -300,9 +300,13 @@ class Rotation3D(Transform3D):
 
         super().__init__()
         self.ortho_rot = OrthoRotation3D(axis_dir, theta)
-        self.point = ensure_vec(point)
+
+        line = Line3D(point, axis_dir)
+        self.point = line.nearest([0, 0, 0])
+
         self.T_inv = Translation3D(-1.0 * self.point)
         self.T = Translation3D(self.point)
+
 
         return
 
@@ -674,4 +678,10 @@ def random_ortho_rotation_3d():
     return ortho_rot
 
 def random_rotation_3d():
-    pass
+    # Random 3D rotation.
+    axis = np.random.rand(3) - [0.5, 0.5, 0.5]
+    alpha = np.random.rand() * 2.0 * np.pi
+    P = np.random.rand(3) * 10
+
+    rot = Rotation3D(P, axis, alpha)
+    return rot
