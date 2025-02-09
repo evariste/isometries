@@ -78,6 +78,10 @@ class OrthoReflection2D(OrthoTransform2D):
     @classmethod
     def from_two_step_form(cls, M, t):
         assert is_identity(t), 'Expect no translation.'
+
+        if is_identity(M):
+            return Identity(2)
+
         assert isinstance(M, OrthoReflection2D), 'Expect first transform to be orthogonal reflection.'
         return OrthoReflection2D(M.direction)
 
@@ -218,6 +222,11 @@ class OrthoRotation2D(OrthoTransform2D):
         theta_2 = np.arctan2(dir_2[1], dir_2[0])
 
         alpha = 2.0 * (theta_2 - theta_1)
+        alpha = wrap_angle_minus_pi_to_pi(alpha)
+
+        if np.isclose(np.abs(alpha), 0) or np.isclose(np.abs(alpha), np.pi):
+            return Identity(2)
+
         return OrthoRotation2D(alpha)
 
     @classmethod
@@ -261,6 +270,10 @@ class OrthoRotation2D(OrthoTransform2D):
     @classmethod
     def from_two_step_form(cls, M, t):
         assert is_identity(t), 'Expect no translation.'
+
+        if is_identity(M):
+            return Identity(2)
+
         assert isinstance(M, OrthoRotation2D), 'Expect first transform to be orthogonal rotation.'
         return OrthoRotation2D(M.angle)
 
@@ -378,6 +391,10 @@ class Rotation2D(Transform2D):
             u_vec_l_to_n = disp_l_to_n / dist_l_to_n
             displacement = 2.0 * dist_l_to_n * u_vec_l_to_n
 
+            distance = np.sqrt(np.sum(displacement * displacement))
+            if np.isclose(distance, 0):
+                return Identity(2)
+
             return Translation2D(displacement)
 
         # Lines are not parallel.
@@ -468,6 +485,10 @@ class Translation2D(Transform2D):
     @classmethod
     def from_two_step_form(cls, M, t):
         assert is_identity(M), 'Expect first transform to be identity.'
+
+        if is_identity(t):
+            return Identity(2)
+
         assert is_translation2d(t), 'Expect second transform to be a translation.'
         return Translation2D(t.vec)
 
