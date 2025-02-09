@@ -23,6 +23,12 @@ class OrthoTransform2D(Transform2D, ABC):
         Return one or two reflections for the orthogonal transformation.
         """
 
+    @abstractmethod
+    def inverse(self):
+        """
+        Return the inverse.
+        """
+
 class OrthoReflection2D(OrthoTransform2D):
     """
     Orthogonal (linear) reflection in 2-D.

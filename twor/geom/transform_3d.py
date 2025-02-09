@@ -23,6 +23,13 @@ class OrthoTransform3D(Transform3D, ABC):
         Return one or two reflections for the orthogonal transformation.
         """
 
+    @abstractmethod
+    def inverse(self):
+        """
+        Return the inverse.
+        """
+
+
 class OrthoReflection3D(OrthoTransform3D):
     """
     Reflection in a plane through the origin.
@@ -52,6 +59,10 @@ class OrthoReflection3D(OrthoTransform3D):
 
     @classmethod
     def from_two_step_form(cls, M, t):
+        # TODO
+        pass
+
+    def inverse(self):
         # TODO
         pass
 
@@ -109,6 +120,10 @@ class OrthoRotation3D(OrthoTransform3D):
 
     @classmethod
     def from_two_step_form(cls, M, t):
+        # TODO
+        pass
+
+    def inverse(self):
         # TODO
         pass
 
@@ -225,6 +240,10 @@ class OrthoImproperRotation(OrthoTransform3D):
 
     @classmethod
     def from_two_step_form(cls, M, t):
+        # TODO
+        pass
+
+    def inverse(self):
         # TODO
         pass
 
