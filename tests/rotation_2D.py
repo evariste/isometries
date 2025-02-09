@@ -2,8 +2,8 @@
 import sys
 import numpy as np
 from twor.geom.transform_2d import (
-    Rotation2D, OrthoRotation2D, OrthoReflection2D, compose_ortho_2d, OrthoTransform2D, ortho2D_to_reflections,
-    random_rotation2d, random_reflection2d, random_ortho_rotation2d, random_ortho_reflection2d
+    OrthoReflection2D, compose_ortho_2d, OrthoTransform2D, ortho2D_to_reflections,
+    random_rotation_2d, random_ortho_rotation_2d, random_ortho_reflection_2d
 )
 from twor.geom.objects import Glyph2D
 from twor.utils.general import apply_hom_matrix_to_points, apply_transform_sequence_to_glyph
@@ -24,7 +24,7 @@ def main():
 
 def test_rotation():
 
-    rot = random_rotation2d()
+    rot = random_rotation_2d()
 
     #############################################################################
 
@@ -41,7 +41,7 @@ def test_rotation():
 
 def test_reflection_decomp():
 
-    ortho_rot = random_ortho_rotation2d()
+    ortho_rot = random_ortho_rotation_2d()
 
     glyph = Glyph2D()
 
@@ -81,7 +81,7 @@ def test_reflection_decomp():
 
 def run_composition_tests():
 
-    ortho_rot_1 = random_ortho_rotation2d()
+    ortho_rot_1 = random_ortho_rotation_2d()
 
     glyph = Glyph2D()
 
@@ -136,10 +136,10 @@ def test_composition(
 def test_inverses():
 
     # Random orthogonal rotation.
-    ortho_rot = random_ortho_rotation2d()
+    ortho_rot = random_ortho_rotation_2d()
 
     # Random orthogonal reflection.
-    ortho_refl = random_ortho_reflection2d()
+    ortho_refl = random_ortho_reflection_2d()
 
     inv_ortho_rot = ortho_rot.inverse()
 
