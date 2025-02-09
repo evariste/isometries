@@ -66,8 +66,20 @@ class OrthoReflection3D(OrthoTransform3D):
 
 
     def get_matrix(self):
-        # TODO:
-        pass
+
+        n = self.normal
+        M = np.eye(4)
+
+        I = np.eye(3)
+        I_transf = self.apply(I)
+        M[:3, :3] = I_transf
+
+        return M
+
+    def __repr__(self):
+        n = np.round(self.normal.flatten(), 2).tolist()
+        return f'OrthoReflection3D(\n {n}\n)'
+
 
 class OrthoRotation3D(OrthoTransform3D):
     """
@@ -201,7 +213,7 @@ class OrthoRotation3D(OrthoTransform3D):
         return pts
 
     def __repr__(self):
-        ax = np.round(self.axis.flatten(), 2)
+        ax = np.round(self.axis.flatten(), 2).tolist()
         ang = np.round(self.angle, 2)
         return f'OriginRotation3D(\n {ax},\n {ang}\n)'
 
@@ -295,8 +307,8 @@ class Reflection3D(Transform3D):
         return H
 
     def __repr__(self):
-        normal = np.round(self.plane.normal.flatten(), 2)
-        pt = np.round(self.plane.pt.flatten(), 2)
+        normal = np.round(self.plane.normal.flatten(), 2).tolist()
+        pt = np.round(self.plane.pt.flatten(), 2).tolist()
         return f'Reflection3D(\n {normal},\n {pt}\n)'
 
 
@@ -359,9 +371,9 @@ class Rotation3D(Transform3D):
         return M_T @ M_rot @ M_T_inv
 
     def __repr__(self):
-        c = np.round(self.point.flatten(), 2)
-        ax = np.round(self.orig_rot.axis.flatten(), 2)
-        ang = np.round(self.orig_rot.angle, 2)
+        c = np.round(self.point.flatten(), 2).tolist()
+        ax = np.round(self.orig_rot.axis.flatten(), 2).tolist()
+        ang = np.round(self.orig_rot.angle, 2).tolist()
         return f'Rotation3D(\n {c},\n {ax},\n {ang}\n)'
 
     def is_close(self, other: Rotation3D):
@@ -399,6 +411,10 @@ class ImproperRotation3D(Transform3D):
         pass
 
     def matrix_equals(self, other: Transform):
+        # TODO
+        pass
+
+    def __repr__(self):
         # TODO
         pass
 
@@ -586,3 +602,16 @@ class Translation3D(Transform3D):
         v = np.round(self.vec.flatten(), 2)
         return f'Translation3D(\n {v}\n)'
 
+
+
+def random_ortho_reflection_3d():
+    # Random orthogonal 2D reflection.
+    # Hacky method.
+    v = np.random.rand(3) - [0.5, 0.5, 0.5]
+    ortho_refl = OrthoReflection3D(v)
+    return ortho_refl
+
+
+def random_reflection_3d():
+
+    pass
