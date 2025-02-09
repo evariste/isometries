@@ -204,7 +204,7 @@ def angle_to_2d_line_direction(alpha):
 
 def nearest_point_on_line(line, point):
     pt = ensure_vec_3d(point)
-    disp = pt - line.pt
+    disp = pt - line.point
 
     comp_par = (disp.T @ line.direction) * line.direction
     comp_perp = disp - comp_par

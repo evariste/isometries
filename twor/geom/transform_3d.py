@@ -266,7 +266,7 @@ class Reflection3D(Transform3D):
 
         pts = validate_pts(points)
 
-        X = self.plane.pt
+        X = self.plane.point
         n = self.plane.normal
 
         disps = pts - X
@@ -290,7 +290,7 @@ class Reflection3D(Transform3D):
 
     def get_matrix(self):
 
-        pt = self.plane.pt
+        pt = self.plane.point
         n = self.plane.normal
 
         T_inv = Translation3D(-1.0 * pt).get_matrix()
@@ -308,7 +308,7 @@ class Reflection3D(Transform3D):
 
     def __repr__(self):
         normal = np.round(self.plane.normal.flatten(), 2).tolist()
-        pt = np.round(self.plane.pt.flatten(), 2).tolist()
+        pt = np.round(self.plane.point.flatten(), 2).tolist()
         return f'Reflection3D(\n {normal},\n {pt}\n)'
 
 

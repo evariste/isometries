@@ -21,19 +21,19 @@ class Line3D(object):
 
     def __init__(self, pt, direction):
 
-        self.pt = ensure_vec(pt)
+        self.point = ensure_vec(pt)
         self.direction = ensure_unit_vec(direction)
 
         return
 
     def __call__(self, mu):
-        return self.pt + mu * self.direction
+        return self.point + mu * self.direction
 
     def nearest(self, point):
 
         v = ensure_vec(point)
 
-        pt_to_v = v - self.pt
+        pt_to_v = v - self.point
 
         coeff_along = np.sum(pt_to_v * self.direction)
 
@@ -42,19 +42,19 @@ class Line3D(object):
         return nearest_pt
 
     def point_from_parameter(self, mu):
-        return self.pt + mu * self.direction
+        return self.point + mu * self.direction
 
     def contains_point(self, X):
         V = ensure_vec(X)
 
-        if np.allclose(V, self.pt):
+        if np.allclose(V, self.point):
             return True
 
-        u = V - self.pt
+        u = V - self.point
         return vecs_parallel(u, self.direction)
 
     def set_start_point(self, P):
-        self.pt = ensure_vec(P)
+        self.point = ensure_vec(P)
 
     def set_direction(self, v):
         self.direction = ensure_unit_vec(v)
@@ -69,7 +69,7 @@ class Plane3D:
 
         self.const = np.sum(self.normal * p)
 
-        self.pt = self.const * self.normal
+        self.point = self.const * self.normal
 
         return
 
@@ -111,7 +111,7 @@ class Plane3D:
 
         c = self.const
         n = self.normal
-        p = l.pt
+        p = l.point
         u = l.direction
 
         u_dot_n = np.sum(u * n)
