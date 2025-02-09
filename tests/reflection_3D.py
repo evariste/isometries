@@ -2,7 +2,6 @@ import sys
 
 import numpy as np
 
-from tests.rot_to_reflections import ref_L
 from twor.utils.general import apply_hom_matrix_to_points
 from twor.geom.objects import Glyph3D
 from twor.geom.transform_3d import random_reflection_3d, random_ortho_reflection_3d

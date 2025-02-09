@@ -2,7 +2,7 @@ import sys
 import numpy as np
 
 from twor.geom.objects import Glyph2D
-from twor.geom.transform_2d import random_reflection2d
+from twor.geom.transform_2d import random_reflection_2d
 from twor.utils.general import apply_hom_matrix_to_points
 
 def main():
@@ -18,7 +18,7 @@ def main():
 
 
 def test_apply_reflection():
-    refl = random_reflection2d()
+    refl = random_reflection_2d()
 
     # Apply to a glyph.
     glyph = Glyph2D()
@@ -35,7 +35,7 @@ def test_apply_reflection():
 
 
 def test_two_step_form():
-    refl = random_reflection2d()
+    refl = random_reflection_2d()
     glyph = Glyph2D()
 
     # Get the two step form
@@ -50,8 +50,8 @@ def test_two_step_form():
     return
 
 def test_composition():
-    refl_1 = random_reflection2d()
-    refl_2 = random_reflection2d()
+    refl_1 = random_reflection_2d()
+    refl_2 = random_reflection_2d()
     glyph = Glyph2D()
 
     # Composition

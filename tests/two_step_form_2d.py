@@ -3,7 +3,7 @@ import sys
 import numpy as np
 
 from twor.geom.transform_2d import (
-    random_reflection2d, random_rotation2d, random_ortho_reflection2d, random_ortho_rotation2d, Transform2D,
+    random_reflection_2d, random_rotation_2d, random_ortho_reflection_2d, random_ortho_rotation_2d, Transform2D,
     flip_two_step_form_2D, compose_2d, transf_2d_from_two_step
 )
 from twor.geom.objects import Glyph2D
@@ -64,16 +64,16 @@ def run_tests_two_step_form_equivalence():
 
     print('Running tests for two-step equivalence.')
 
-    o_refl = random_ortho_reflection2d()
+    o_refl = random_ortho_reflection_2d()
     test_two_step_form_equivalence(o_refl)
 
-    o_rot = random_ortho_rotation2d()
+    o_rot = random_ortho_rotation_2d()
     test_two_step_form_equivalence(o_rot)
 
-    refl = random_reflection2d()
+    refl = random_reflection_2d()
     test_two_step_form_equivalence(refl)
 
-    rot = random_rotation2d()
+    rot = random_rotation_2d()
     test_two_step_form_equivalence(rot)
 
     return
@@ -83,16 +83,16 @@ def run_tests_flip_two_step():
 
     print('Running tests for flipping two-step form.')
 
-    o_refl = random_ortho_reflection2d()
+    o_refl = random_ortho_reflection_2d()
     test_flip_two_step(o_refl)
 
-    o_rot = random_ortho_rotation2d()
+    o_rot = random_ortho_rotation_2d()
     test_flip_two_step(o_rot)
 
-    refl = random_reflection2d()
+    refl = random_reflection_2d()
     test_flip_two_step(refl)
 
-    rot = random_rotation2d()
+    rot = random_rotation_2d()
     test_flip_two_step(rot)
 
     return
@@ -102,16 +102,16 @@ def run_tests_back_conversion():
 
     print('Running tests for back conversion.')
 
-    o_refl = random_ortho_reflection2d()
+    o_refl = random_ortho_reflection_2d()
     test_back_conversion(o_refl)
 
-    o_rot = random_ortho_rotation2d()
+    o_rot = random_ortho_rotation_2d()
     test_back_conversion(o_rot)
 
-    refl = random_reflection2d()
+    refl = random_reflection_2d()
     test_back_conversion(refl)
 
-    rot = random_rotation2d()
+    rot = random_rotation_2d()
     test_back_conversion(rot)
 
     return
