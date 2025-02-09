@@ -50,31 +50,27 @@ def apply_transform_sequence_to_glyph(Ts, glyph):
 
     return glyph_out
 
-def rotate_vector(vec, axis, angle):
+def rotate_vector_3d(vec, axis, theta):
     """
     Rotate the vector about the given axis by the given angle.
+
+    Basically Rodrigues' formula.
     """
-    u = ensure_unit_vec_3d(axis)
+    k = ensure_unit_vec_3d(axis)
     v = ensure_vec_3d(vec)
 
-    if vecs_parallel(u, v):
+    if vecs_parallel(k, v):
         return v
 
-    theta = wrap_angle_minus_pi_to_pi(angle)
+    c = np.cos(theta)
+    s = np.sin(theta)
 
-    comp_u_v = u.T @ v * u
+    cross_k_v = cross_product(k, v)
+    dot_k_v = k.T @ v
 
-    perp_u_v = v - comp_u_v
+    v_rot = v * c + cross_k_v * s + dot_k_v * (1 - c) * k
 
-    d_perp_u_v = np.sqrt(perp_u_v.T @ perp_u_v)
-
-    w = cross_product(u, v)
-
-    rot_part_1 = np.cos(theta) * d_perp_u_v * perp_u_v
-
-    rot_part_2 = np.sin(theta) * d_perp_u_v * w
-
-    return comp_u_v + rot_part_1 + rot_part_2
+    return v_rot
 
 
 
@@ -334,14 +330,14 @@ def angle_from_rotation_matrix(R):
 
 def rotation_matrix_from_axis_and_angle(u, theta):
     """
-    Return a 3x3 rotation matrix for axis u and angle theta.
-    Uses Rodrigues' formula.
+    Return a 3x3 matrix for orthogonal rotation about axis u with angle theta.
+    Derived using Rodrigues' formula.
 
-    Rotation is in anti-clockwise sense looking backwards along the axis of
-    rotation in a right-handed frame.
+    In a right-handed frame: Rotation is in anti-clockwise sense looking backwards along the axis of
+    rotation.
 
-    Rotation is in anti-clockwise sense looking forwards along the axis of
-    rotation in a left-handed frame.
+    In a left-handed frame: Rotation is in anti-clockwise sense looking forwards along the axis of
+    rotation.
 
     :param u: axis vector
     :param theta: angle
