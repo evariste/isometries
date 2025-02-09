@@ -374,6 +374,36 @@ class Rotation3D(Transform3D):
 
         return np.allclose(R, R_other) and np.allclose(p, p_other)
 
+class ImproperRotation3D(Transform3D):
+
+    def __init__(self):
+        super(ImproperRotation3D, self).__init__()
+
+        return
+
+    def two_step_form(self):
+        # TODO
+        pass
+
+    @classmethod
+    def from_two_step_form(cls, M, t):
+        # TODO
+        pass
+
+    def get_matrix(self):
+        # TODO
+        pass
+
+    def apply(self, points):
+        # TODO
+        pass
+
+    def matrix_equals(self, other: Transform):
+        # TODO
+        pass
+
+
+
 class TransOriginRotation3D(Transform3D):
     """
     A two-step transformation of the form
