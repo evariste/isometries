@@ -7,9 +7,9 @@ from typing import List
 
 from twor.utils.general import (
     ensure_unit_vec, ensure_vec, validate_pts, wrap_angle_minus_pi_to_pi, rotate_vector_3d, cross_product,
-    angle_between_vectors, vecs_parallel, rotation_matrix_from_axis_and_angle
+    angle_between_vectors, vecs_parallel, rotation_matrix_from_axis_and_angle, rotate_vectors_3d
 )
-from twor.geom.transform import Transform, Identity
+from twor.geom.transform import Transform, Identity, is_identity
 from twor.geom.objects import Plane3D
 
 class Transform3D(Transform, ABC):
@@ -85,41 +85,21 @@ class OrthoRotation3D(OrthoTransform3D):
     """
     Rotation about an axis going through (0, 0, 0).
     """
-    def __init__(self, axis, angle):
+    def __init__(self, axis, theta):
 
         super().__init__()
 
         self.axis = ensure_unit_vec(axis)
-        self.angle = wrap_angle_minus_pi_to_pi(angle)
+        self.angle = wrap_angle_minus_pi_to_pi(theta)
 
-        origin = [0, 0, 0]
-        z_vec = [0, 0, 1]
+        ijk = np.eye(3)
 
-        axis_plane = Plane3D(self.axis, origin)
-        xy_plane = Plane3D(z_vec,  origin)
+        uvw = rotate_vectors_3d(ijk, self.axis, self.angle)
 
-        O = ensure_vec([0, 0, 0])
+        reflections = reflections_for_frame(uvw)
 
-        if axis_plane.parallel_to(xy_plane):
-            u = [1, 0, 0]
-            v = rotate_vector_3d(u, self.axis, self.angle / 2.0)
-            plane_0 = Plane3D(u, O)
-            plane_1 = Plane3D(v, O)
-        else:
-            l = axis_plane.intersection(xy_plane)
-
-            assert l.contains_point(O), 'Unexpected line of intersection.'
-            l.set_start_point(O)
-
-            P = l(10)
-            Q = O + 10 * self.axis
-            R = rotate_vector_3d(P, self.axis, self.angle / 2.0)
-
-            plane_0 = Plane3D.from_points(O, P, Q)
-            plane_1 = Plane3D.from_points(O, R, Q)
-
-        self.refl_0 = Reflection3D(plane_0)
-        self.refl_1 = Reflection3D(plane_1)
+        self.refl_0 = reflections[0]
+        self.refl_1 = reflections[1]
 
         return
 
@@ -133,8 +113,9 @@ class OrthoRotation3D(OrthoTransform3D):
         pass
 
     def get_reflections(self):
-        # TODO:
-        pass
+        R0 = OrthoReflection3D(self.refl_0.normal)
+        R1 = OrthoReflection3D(self.refl_1.normal)
+        return [R0, R1]
 
 
     def to_quaternion(self):
@@ -311,14 +292,14 @@ class Reflection3D(Transform3D):
 
 class Rotation3D(Transform3D):
 
-    def __init__(self, point, axis_dir, angle):
+    def __init__(self, point, axis_dir, theta):
         """
-        A rotation through 'angle' about an axis that
+        A rotation through 'theta' about an axis that
         goes through 'point' with the direction 'axis_dir'.
         """
 
         super().__init__()
-        self.orig_rot = OrthoRotation3D(axis_dir, angle)
+        self.orig_rot = OrthoRotation3D(axis_dir, theta)
         self.point = ensure_vec(point)
         self.T_inv = Translation3D(-1.0 * self.point)
         self.T = Translation3D(self.point)
@@ -407,10 +388,6 @@ class ImproperRotation3D(Transform3D):
         # TODO
         pass
 
-    def matrix_equals(self, other: Transform):
-        # TODO
-        pass
-
     def __repr__(self):
         # TODO
         pass
@@ -425,9 +402,9 @@ class TransOriginRotation3D(Transform3D):
      - M is an origin rotation
      - T is a translation.
     """
-    def __init__(self, transvector, axis, angle):
+    def __init__(self, transvector, axis, theta):
         super().__init__()
-        self.origin_rot = OrthoRotation3D(axis, angle)
+        self.origin_rot = OrthoRotation3D(axis, theta)
         self.tra = Translation3D(transvector)
 
         return
@@ -510,10 +487,10 @@ class TransRotation3D(Transform3D):
     """
 
 
-    def __init__(self, point, axis, angle, transvector):
+    def __init__(self, point, axis, theta, transvector):
         super().__init__()
 
-        self.gen_rot = Rotation3D(point, axis, angle)
+        self.gen_rot = Rotation3D(point, axis, theta)
         self.tra = Translation3D(transvector)
 
         return
@@ -600,6 +577,77 @@ class Translation3D(Transform3D):
         return f'Translation3D(\n {v}\n)'
 
 
+def frame_orthonormal(uvw):
+    """
+    Given three vectors [u, v, w] in a 3x3 array
+    check if they are orthonormal.
+    """
+    assert uvw.shape == (3, 3), 'Expect 3x3 array.'
+    return np.allclose(
+        uvw.T @ uvw,
+        np.eye(3)
+    )
+
+
+def reflections_for_frame(uvw):
+    """
+    The usual orthonormal basis for 3D is
+    i=(1,0,0)^T, j=(0,1,0)^T, k=(0,0,1)^T
+
+    If i, j, k are mapped to u, v, w under some orthogonal 3D
+    transformation, find the sequence of reflections that can
+    represent the tranformation. There will be no more than
+    three.
+    """
+    assert frame_orthonormal(uvw), 'Expect orthonormal frame.'
+
+    ijk = np.eye(3)
+
+    if np.allclose(uvw, ijk):
+        return Identity(3)
+
+    i = ijk[:, [0]]
+    j = ijk[:, [1]]
+    k = ijk[:, [2]]
+
+    u = uvw[:, [0]]
+    v = uvw[:, [1]]
+    w = uvw[:, [2]]
+
+
+    # First reflection takes i to u.
+    if np.allclose(i, u):
+        R = Identity(3)
+    else:
+        normal = u - i
+        R = OrthoReflection3D(normal)
+
+    assert np.allclose(u, R.apply(i))
+
+    R_j = R.apply(j)
+
+    if np.allclose(R_j, v):
+        S = Identity(3)
+    else:
+        normal = cross_product(u, v + R_j)
+        S = OrthoReflection3D(normal)
+
+    SR_i = S.apply(R.apply(i))
+    SR_j = S.apply(R.apply(j))
+    SR_k = S.apply(R.apply(k))
+
+    assert np.allclose(SR_i, u)
+    assert np.allclose(SR_j, v)
+
+    if np.allclose(SR_k, w):
+        T = Identity(3)
+    else:
+        T = OrthoReflection3D(w)
+
+    reflections = [R, S, T]
+    reflections = [r for r in reflections if not is_identity(r)]
+
+    return reflections
 
 def random_ortho_reflection_3d():
     # Random orthogonal 3D reflection.
@@ -617,3 +665,13 @@ def random_reflection_3d():
     plane = Plane3D(n, P)
     return Reflection3D(plane)
 
+
+def random_ortho_rotation_3d():
+    # Random orthogonal 3D rotation.
+    axis = np.random.rand(3) - [0.5, 0.5, 0.5]
+    alpha = np.random.rand() * 2.0 * np.pi
+    ortho_rot = OrthoRotation3D(axis, alpha)
+    return ortho_rot
+
+def random_rotation_3d():
+    pass
