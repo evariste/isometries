@@ -75,3 +75,6 @@ class Identity(Transform):
         assert isinstance(M, Identity), 'Expect first and second transform to be identity.'
         assert isinstance(t, Identity), 'Expect first and second transform to be identity.'
         return Identity(M.dim)
+
+def is_identity(transf: Transform):
+    return isinstance(transf, Identity)
