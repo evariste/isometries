@@ -1,12 +1,9 @@
 import sys
 import numpy as np
-from matplotlib import pyplot as plt
-
 
 from twor.geom.objects import Glyph2D
 from twor.geom.transform_2d import random_reflection2d
 from twor.utils.general import apply_hom_matrix_to_points
-from twor.utils.plotting import set_axis_glyph_bounds
 
 def main():
 
