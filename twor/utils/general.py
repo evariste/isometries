@@ -50,6 +50,18 @@ def apply_transform_sequence_to_glyph(Ts, glyph):
 
     return glyph_out
 
+def rotate_vectors_3d(vecs, axis, theta):
+
+    pts = validate_pts(vecs)
+
+    pts_out = [rotate_vector_3d(v, axis, theta) for v in pts.T]
+
+    pts_out = np.hstack(pts_out)
+
+    return pts_out
+
+
+
 def rotate_vector_3d(vec, axis, theta):
     """
     Rotate the vector about the given axis by the given angle.
@@ -241,9 +253,9 @@ def angle_between_vectors(v_first, v_second):
 
     cosine = np.sum(v0 * v1) / norm0 / norm1
 
-    angle = np.arccos(cosine)
+    theta = np.arccos(cosine)
 
-    return angle
+    return theta
 
     # RA, tA = rot_A.R, rot_A.centre
     # RB, tB = rot_B.R, rot_B.centre
@@ -499,8 +511,8 @@ def random_rotation_3D():
     """
     R = random_rotation_matrix_3D()
     axis = axis_from_rotation_matrix(R)
-    angle = angle_from_rotation_matrix(R)
-    return ensure_vec_3d(axis), angle
+    theta = angle_from_rotation_matrix(R)
+    return ensure_vec_3d(axis), theta
 
 def random_rotation_matrix_3D():
     """
