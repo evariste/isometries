@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from typing import List
 
 from twor.utils.general import (
-    ensure_unit_vec, ensure_vec, validate_pts, wrap_angle_minus_pi_to_pi, rotate_vector, cross_product,
+    ensure_unit_vec, ensure_vec, validate_pts, wrap_angle_minus_pi_to_pi, rotate_vector_3d, cross_product,
     angle_between_vectors, vecs_parallel, rotation_matrix_from_axis_and_angle
 )
 from twor.geom.transform import Transform, Identity
@@ -102,7 +102,7 @@ class OrthoRotation3D(OrthoTransform3D):
 
         if axis_plane.parallel_to(xy_plane):
             u = [1, 0, 0]
-            v = rotate_vector(u, self.axis, self.angle / 2.0)
+            v = rotate_vector_3d(u, self.axis, self.angle / 2.0)
             plane_0 = Plane3D(u, O)
             plane_1 = Plane3D(v, O)
         else:
@@ -113,7 +113,7 @@ class OrthoRotation3D(OrthoTransform3D):
 
             P = l(10)
             Q = O + 10 * self.axis
-            R = rotate_vector(P, self.axis, self.angle / 2.0)
+            R = rotate_vector_3d(P, self.axis, self.angle / 2.0)
 
             plane_0 = Plane3D.from_points(O, P, Q)
             plane_1 = Plane3D.from_points(O, R, Q)
@@ -154,7 +154,7 @@ class OrthoRotation3D(OrthoTransform3D):
     @classmethod
     def from_planes(cls, plane_0: Plane3D, plane_1: Plane3D):
         if plane_0.parallel_to(plane_1):
-            return cls([1, 0, 0], 0)
+            return Identity
 
         n_0 = plane_0.normal
         n_1 = plane_1.normal
@@ -180,9 +180,9 @@ class OrthoRotation3D(OrthoTransform3D):
         plane_shared = Plane3D.from_points(O, P, Q)
         n_shared = plane_shared.normal
 
-        n_0 = rotate_vector(n_shared, self.axis, -0.5 * self.angle)
+        n_0 = rotate_vector_3d(n_shared, self.axis, -0.5 * self.angle)
 
-        n_1 = rotate_vector(n_shared, other.axis, 0.5 * other.angle)
+        n_1 = rotate_vector_3d(n_shared, other.axis, 0.5 * other.angle)
 
         plane_0 = Plane3D(n_0, O)
         plane_1 = Plane3D(n_1, O)
