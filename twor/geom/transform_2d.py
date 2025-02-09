@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from twor.geom.transform import Transform, Identity
+from twor.geom.transform import Transform, Identity, is_identity
 from abc import ABC, abstractmethod
 import numpy as np
 
@@ -39,8 +39,8 @@ class OrthoReflection2D(OrthoTransform2D):
         return
 
     @classmethod
-    def from_angle(cls, angle):
-        direction = [np.cos(angle), np.sin(angle)]
+    def from_angle(cls, theta):
+        direction = [np.cos(theta), np.sin(theta)]
         return OrthoReflection2D(direction)
 
     def inverse(self):
@@ -95,11 +95,11 @@ class OrthoReflection2D(OrthoTransform2D):
 
 class OrthoRotation2D(OrthoTransform2D):
 
-    def __init__(self, angle):
+    def __init__(self, theta):
 
         super().__init__()
 
-        self.angle = wrap_angle_minus_pi_to_pi(angle)
+        self.angle = wrap_angle_minus_pi_to_pi(theta)
 
         # Set up an initial pair of reflections that can be used
         # to execute this rotation.
@@ -223,7 +223,7 @@ class Reflection2D(Transform2D):
             return M
 
         assert isinstance(M, OrthoReflection2D), 'Expect first transform to be an orthogonal reflection.'
-        assert is_translation2d(t), 'Expect second transform to be a translation.'
+        assert is_translation_2d(t), 'Expect second transform to be a translation.'
 
         # Origin.
         O = ensure_vec([0, 0])
@@ -290,11 +290,11 @@ class Reflection2D(Transform2D):
 class Rotation2D(Transform2D):
 
 
-    def __init__(self, centre, angle):
+    def __init__(self, centre, theta):
 
         super().__init__()
         self.centre = ensure_vec(centre)
-        self.angle = wrap_angle_minus_pi_to_pi(angle)
+        self.angle = wrap_angle_minus_pi_to_pi(theta)
 
         self.ortho_rotation = OrthoRotation2D(self.angle)
 
@@ -348,8 +348,8 @@ class Rotation2D(Transform2D):
             # Transformation is a half-turn.
             # Centre is half way between O and P
             C = 0.5 * (O + P)
-            angle = np.pi
-            return Rotation2D(C, angle)
+            theta = np.pi
+            return Rotation2D(C, theta)
 
         assert not np.allclose(P, Q), 'This should not happen!'
 
@@ -365,9 +365,9 @@ class Rotation2D(Transform2D):
 
         C = line_A.intersection(line_B)
 
-        angle = line_A.angle_to(line_B)
+        theta = line_A.angle_to(line_B)
 
-        return Rotation2D(C, angle)
+        return Rotation2D(C, theta)
 
 
 
@@ -459,8 +459,8 @@ class Rotation2D(Transform2D):
 
     def __repr__(self):
         centre = np.round(self.centre.flatten(), 2)
-        angle = np.round(self.angle, 2)
-        return f'Rotation2D(\n {centre},\n {angle}\n)'
+        theta = np.round(self.angle, 2)
+        return f'Rotation2D(\n {centre},\n {theta}\n)'
 
 
 class Translation2D(Transform2D):
@@ -495,7 +495,7 @@ class Translation2D(Transform2D):
         if is_identity(t):
             return Identity(2)
 
-        assert is_translation2d(t), 'Expect second transform to be a translation.'
+        assert is_translation_2d(t), 'Expect second transform to be a translation.'
         return Translation2D(t.vec)
 
 
@@ -522,9 +522,9 @@ def compose_2d(transf_a: Transform2D, transf_b: Transform2D):
     M_out = compose_ortho_2d(M_a, M_b)
 
     v = ensure_vec([0, 0])
-    if is_translation2d(t_b):
+    if is_translation_2d(t_b):
         v += t_b.vec
-    if is_translation2d(t_c):
+    if is_translation_2d(t_c):
         v += t_c.vec
 
 
@@ -671,9 +671,9 @@ def flip_two_step_form_2D(two_step_transf):
 
     # Neither t0, nor t1, are the identity.
 
-    if is_ortho2d(t0):
+    if is_ortho_2d(t0):
         # Form should be [M, t]
-        assert is_translation2d(t1), 'Expect second tranform to be a translation.'
+        assert is_translation_2d(t1), 'Expect second tranform to be a translation.'
         # Translation vector
         p = t1.vec
 
@@ -688,8 +688,8 @@ def flip_two_step_form_2D(two_step_transf):
         return [t_q, M]
 
     # First transformation is not orthogonal.
-    assert is_translation2d(t0), 'Expect first tranform to be a translation'
-    assert is_ortho2d(t1), 'Expect second transform to be orthogonal.'
+    assert is_translation_2d(t0), 'Expect first tranform to be a translation'
+    assert is_ortho_2d(t1), 'Expect second transform to be orthogonal.'
 
     # Form is [t, M]
 
@@ -706,16 +706,13 @@ def flip_two_step_form_2D(two_step_transf):
     return [M, t_q]
 
 
-def is_identity(transf: Transform2D):
-    return isinstance(transf, Identity)
-
-def is_ortho2d(transf: Transform2D):
+def is_ortho_2d(transf: Transform2D):
     return isinstance(transf, OrthoTransform2D)
 
-def is_translation2d(transf: Transform2D):
+def is_translation_2d(transf: Transform2D):
     return isinstance(transf, Translation2D)
 
-def random_reflection2d():
+def random_reflection_2d():
     # Random general 2D reflection.
     P = np.random.rand(2) * 10
     v = np.random.rand(2)
@@ -723,23 +720,22 @@ def random_reflection2d():
     refl = Reflection2D(line_1)
     return refl
 
-def random_ortho_reflection2d():
+def random_ortho_reflection_2d():
     # Random orthogonal 2D reflection.
     v = np.random.rand(2) - [0.5, 0.5]
     ortho_refl = OrthoReflection2D(v)
     return ortho_refl
 
-def random_rotation2d():
+def random_rotation_2d():
     # Random general 2D rotation.
     alpha = np.random.rand() * 2.0 * np.pi
     C = np.random.rand(2) * 10
     rot = Rotation2D(C, alpha)
     return rot
 
-def random_ortho_rotation2d():
+def random_ortho_rotation_2d():
     # Random orthogonal 2D rotation.
     alpha = np.random.rand() * 2.0 * np.pi
-    # Random orthogonal rotation
     ortho_rot = OrthoRotation2D(alpha)
     return ortho_rot
 
