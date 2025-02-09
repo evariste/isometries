@@ -299,7 +299,7 @@ class Rotation3D(Transform3D):
         """
 
         super().__init__()
-        self.orig_rot = OrthoRotation3D(axis_dir, theta)
+        self.ortho_rot = OrthoRotation3D(axis_dir, theta)
         self.point = ensure_vec(point)
         self.T_inv = Translation3D(-1.0 * self.point)
         self.T = Translation3D(self.point)
@@ -307,8 +307,8 @@ class Rotation3D(Transform3D):
         return
 
     def followed_by(self, other: Rotation3D):
-        L = self.orig_rot
-        K = other.orig_rot
+        L = self.ortho_rot
+        K = other.ortho_rot
         M = L.followed_by(K)
 
         p = self.point
@@ -330,34 +330,34 @@ class Rotation3D(Transform3D):
         pass
 
     def to_trans_origin_rot(self):
-        vec = self.point - self.orig_rot.apply(self.point)
-        return TransOriginRotation3D(vec, self.orig_rot.axis, self.orig_rot.angle)
+        vec = self.point - self.ortho_rot.apply(self.point)
+        return TransOriginRotation3D(vec, self.ortho_rot.axis, self.ortho_rot.angle)
 
     def apply(self, points):
         pts = validate_pts(points)
         pts = self.T_inv.apply(pts)
-        pts = self.orig_rot.apply(pts)
+        pts = self.ortho_rot.apply(pts)
         pts = self.T.apply(pts)
         return pts
 
 
     def get_matrix(self):
         M_T_inv = self.T_inv.get_matrix()
-        M_rot = self.orig_rot.get_matrix()
+        M_rot = self.ortho_rot.get_matrix()
         M_T = self.T.get_matrix()
 
         return M_T @ M_rot @ M_T_inv
 
     def __repr__(self):
         c = np.round(self.point.flatten(), 2).tolist()
-        ax = np.round(self.orig_rot.axis.flatten(), 2).tolist()
-        ang = np.round(self.orig_rot.angle, 2).tolist()
+        ax = np.round(self.ortho_rot.axis.flatten(), 2).tolist()
+        ang = np.round(self.ortho_rot.angle, 2).tolist()
         return f'Rotation3D(\n {c},\n {ax},\n {ang}\n)'
 
     def is_close(self, other: Rotation3D):
 
-        R = self.orig_rot.get_matrix()
-        R_other = other.orig_rot.get_matrix()
+        R = self.ortho_rot.get_matrix()
+        R_other = other.ortho_rot.get_matrix()
 
         p = self.point
         p_other = other.point
@@ -499,8 +499,8 @@ class TransRotation3D(Transform3D):
     def from_transforms(cls, rotation: Rotation3D, trans: Translation3D):
 
         pt = rotation.point
-        ax = rotation.orig_rot.axis
-        ang = rotation.orig_rot.angle
+        ax = rotation.ortho_rot.axis
+        ang = rotation.ortho_rot.angle
         v = trans.vec
 
         return cls(pt, ax, ang, v)

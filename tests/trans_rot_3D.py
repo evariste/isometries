@@ -42,7 +42,7 @@ transf_E = rot_A.followed_by(rot_D)
 
 assert isinstance(transf_E, TransRotation3D)
 
-ax = transf_E.gen_rot.orig_rot.axis
+ax = transf_E.gen_rot.ortho_rot.axis
 
 print(transf_E)
 

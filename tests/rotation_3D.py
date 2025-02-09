@@ -16,22 +16,21 @@ def main():
 
 
 
-
 def test_matrices():
 
     ortho_rot = random_ortho_rotation_3d()
-    #
-    # glyph = Glyph3D()
-    #
-    # pts = glyph.points
-    #
-    # M_ortho_refl = ortho_refl.get_matrix()
-    #
-    # pts_B = glyph.apply_transformation(ortho_refl).points
-    #
-    # pts_C = apply_hom_matrix_to_points(M_ortho_refl, pts)
-    #
-    # assert np.allclose(pts_B, pts_C), 'Result from matrix multiplication differ'
+
+    glyph = Glyph3D()
+
+    pts = glyph.points
+
+    M_ortho_rot = ortho_rot.get_matrix()
+
+    pts_B = glyph.apply_transformation(ortho_rot).points
+
+    pts_C = apply_hom_matrix_to_points(M_ortho_rot, pts)
+
+    assert np.allclose(pts_B, pts_C), 'Result from matrix multiplication differ'
     #
     # refl = random_reflection_3d()
     #
