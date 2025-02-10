@@ -88,7 +88,7 @@ def run_composition_tests():
 
 
     # Compose rotation with itself.
-    test_composition(ortho_rot_1, ortho_rot_1, glyph)
+    test_composition_ortho2d(ortho_rot_1, ortho_rot_1, glyph)
 
     #############################################################################
     # Random reflection.
@@ -98,13 +98,13 @@ def run_composition_tests():
 
     #############################################################################
     # Rotation then random orthogonal reflection
-    test_composition(ortho_rot_1, ortho_refl_1, glyph)
+    test_composition_ortho2d(ortho_rot_1, ortho_refl_1, glyph)
 
     # Orthogonal reflection then rotation
-    test_composition(ortho_refl_1, ortho_rot_1, glyph)
+    test_composition_ortho2d(ortho_refl_1, ortho_rot_1, glyph)
 
     # Reflection with itself
-    test_composition(ortho_refl_1, ortho_refl_1, glyph)
+    test_composition_ortho2d(ortho_refl_1, ortho_refl_1, glyph)
 
     #############################################################################
     # Second random reflection.
@@ -113,11 +113,11 @@ def run_composition_tests():
     ortho_refl_2 = OrthoReflection2D(w)
 
     # Compose two reflections
-    test_composition(ortho_refl_1, ortho_refl_2, glyph)
+    test_composition_ortho2d(ortho_refl_1, ortho_refl_2, glyph)
 
     return
 
-def test_composition(
+def test_composition_ortho2d(
         ortho_T1: OrthoTransform2D,
         ortho_T2: OrthoTransform2D,
         glyph: Glyph2D
