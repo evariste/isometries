@@ -63,8 +63,8 @@ class OrthoReflection3D(OrthoTransform3D):
         pass
 
     def inverse(self):
-        # TODO
-        pass
+        M = OrthoReflection3D(self.normal)
+        return M
 
     def apply(self, points):
 
@@ -124,8 +124,8 @@ class OrthoRotation3D(OrthoTransform3D):
         pass
 
     def inverse(self):
-        # TODO
-        pass
+        M = OrthoRotation3D(self.axis, -1.0 * self.angle)
+        return M
 
     def get_reflections(self):
         R0 = OrthoReflection3D(self.refl_0.normal)
@@ -134,6 +134,9 @@ class OrthoRotation3D(OrthoTransform3D):
 
 
     def to_quaternion(self):
+        """
+        Generate a quaternion to represent the orthogonal rotation.
+        """
         v = self.axis
         theta = self.angle
 
@@ -216,23 +219,35 @@ class OrthoRotation3D(OrthoTransform3D):
 
 class OrthoImproperRotation(OrthoTransform3D):
 
-    def __init__(self):
+    def __init__(self, axis, theta):
 
         super(OrthoImproperRotation, self).__init__()
+        self.axis = ensure_unit_vec(axis)
+        self.angle = wrap_angle_minus_pi_to_pi(theta)
+
+        # A rotation and a reflection.
+        self.rot = OrthoRotation3D(self.axis, self.angle)
+        self.refl = OrthoReflection3D(self.axis)
 
         return
 
     def two_step_form(self):
-        # TODO
-        pass
+        M = OrthoImproperRotation(self.axis, self.angle)
+        I = Identity(3)
+        return [M, I]
 
     def apply(self, points):
-        # TODO
-        pass
+        pts = validate_pts(points)
+        pts = self.rot.apply(pts)
+        pts = self.refl.apply(pts)
+        return pts
 
     def get_matrix(self):
-        # TODO
-        pass
+        M = self.rot.get_matrix()
+        N = self.refl.get_matrix()
+        NM = M @ N
+
+        return NM
 
     def get_reflections(self):
         # TODO
