@@ -13,6 +13,8 @@ def main():
 
     test_self_inversion()
 
+    print('Done.')
+    
     return 0
 
 
@@ -25,10 +27,14 @@ def test_self_inversion():
     glyph_B = glyph.apply_transformation(ortho_refl).apply_transformation(ortho_refl)
     assert glyph.is_close_to(glyph_B), 'Failed self inversion check'
 
+    ortho_refl_inv = ortho_refl.inverse()
+    glyph_C = glyph.apply_transformation(ortho_refl).apply_transformation(ortho_refl_inv)
+    assert glyph.is_close_to(glyph_C), 'Failed self inversion check'
+
     refl = random_reflection_3d()
 
-    glyph_C = glyph.apply_transformation(refl).apply_transformation(refl)
-    assert glyph.is_close_to(glyph_C), 'Failed self inversion check'
+    glyph_D = glyph.apply_transformation(refl).apply_transformation(refl)
+    assert glyph.is_close_to(glyph_D), 'Failed self inversion check'
 
     return
 
