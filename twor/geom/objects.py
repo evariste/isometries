@@ -59,6 +59,20 @@ class Line3D(object):
     def set_direction(self, v):
         self.direction = ensure_unit_vec(v)
 
+    def __repr__(self):
+        return f"""Line3D(
+{self.point.tolist()},
+{self.direction.tolist()},
+)"""
+
+    def __str__(self):
+        p = np.round(self.point, 2).tolist()
+        d = np.round(self.direction, 2).tolist()
+        return f"""Line3D(
+{p},
+{d},
+)"""
+
 
 class Plane3D:
     def __init__(self, normal, pt):
@@ -142,6 +156,21 @@ class Plane3D:
         intersection = Line3D(pt_inter, direction)
 
         return intersection
+
+    def __repr__(self):
+        return f"""Plane3D(
+{self.normal.tolist()},
+{self.point.tolist()},
+)"""
+
+    def __str__(self):
+        n = np.round(self.normal, 2).tolist()
+        p = np.round(self.point, 2).tolist()
+        return f"""Plane3D(
+{n},
+{p},
+)"""
+
 
 
 
@@ -393,6 +422,19 @@ class Line2D:
 
         return pt
 
+    def __repr__(self):
+        return f"""Line2D(
+{self.point.tolist()},
+{self.direction.tolist()},
+)"""
+
+    def __str__(self):
+        p = np.round(self.point, 2).tolist()
+        d = np.round(self.direction, 2).tolist()
+        return f"""Line2D(
+{p},
+{d},
+)"""
 
 
 
