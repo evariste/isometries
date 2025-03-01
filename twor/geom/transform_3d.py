@@ -13,14 +13,17 @@ from twor.geom.transform import Transform, Identity, is_identity
 from twor.geom.objects import Plane3D, Line3D
 
 class Transform3D(Transform, ABC):
-    pass
+
+    def copy(self):
+        return eval(self.__repr__())
+
 
 class OrthoTransform3D(Transform3D, ABC):
 
     @abstractmethod
     def get_reflections(self) -> List[OrthoReflection3D]:
         """
-        Return one or two reflections for the orthogonal transformation.
+        Return between one and three reflections for the orthogonal transformation.
         """
 
     @abstractmethod
@@ -37,15 +40,12 @@ class OrthoReflection3D(OrthoTransform3D):
 
     def __init__(self, normal):
         """
-        normal is the plane normal.
+        Reflection in a plane with the givennormal.
         """
 
         super(OrthoReflection3D, self).__init__()
-
         self.normal = ensure_unit_vec(normal)
         self.plane = Plane3D(self.normal, [0, 0, 0])
-
-
         return
 
     def get_reflections(self):
@@ -53,6 +53,9 @@ class OrthoReflection3D(OrthoTransform3D):
         return [M]
 
     def two_step_form(self):
+        """
+        [OrthoTransform3D, Translation3D]
+        """
         M = OrthoReflection3D(self.normal)
         I = Identity(3)
         return [M, I]
@@ -67,37 +70,31 @@ class OrthoReflection3D(OrthoTransform3D):
         return M
 
     def apply(self, points):
-
         pts = validate_pts(points)
         n = self.normal
 
-        # Component of points in normal direction.
+        # Components of points in direction of normal.
         comp_norm = n @ (n.T @ pts)
-        ret = pts - 2 * comp_norm
+        ret = pts - 2.0 * comp_norm
         return ret
 
-
     def get_matrix(self):
-
         M = np.eye(4)
-
         I = np.eye(3)
         I_transf = self.apply(I)
         M[:3, :3] = I_transf
-
         return M
 
     def __repr__(self):
         n = np.round(self.normal.flatten(), 2).tolist()
-        return f'OrthoReflection3D(\n {n}\n)'
+        return f'OrthoReflection3D(\n    {n}\n)'
 
 
 class OrthoRotation3D(OrthoTransform3D):
     """
-    Rotation about an axis going through (0, 0, 0).
+    Rotation about an axis going through (0, 0, 0)^T.
     """
     def __init__(self, axis, theta):
-
         super().__init__()
 
         self.axis = ensure_unit_vec(axis)
@@ -109,13 +106,25 @@ class OrthoRotation3D(OrthoTransform3D):
 
         reflections = reflections_for_frame(uvw)
 
+        if len(reflections) == 1:
+            assert is_identity(reflections[0]), 'Unexpected non-trivial reflection.'
+            # Fake an identity transformation with two identical reflections.
+            reflections = [OrthoReflection3D([1, 0, 0]), OrthoReflection3D([1, 0, 0])]
+
+        assert len(reflections) == 2, 'Expect two reflections'
+
         self.refl_0 = reflections[0]
         self.refl_1 = reflections[1]
 
         return
 
     def two_step_form(self):
-        # TODO
+        """
+        [OrthoTransform3D, Translation3D]
+        """
+        M = OrthoRotation3D(self.axis, self.angle)
+        I = Identity(3)
+        return [M, I]
         pass
 
     @classmethod
@@ -164,7 +173,17 @@ class OrthoRotation3D(OrthoTransform3D):
 
         return cls(axis, 2.0 * theta)
 
+    @classmethod
+    def from_reflections(cls, refl_0: OrthoReflection3D, refl_1: OrthoReflection3D):
+        plane_0 = refl_0.plane
+        plane_1 = refl_1.plane
+        return OrthoRotation3D.from_planes(plane_0, plane_1)
+
+
     def followed_by(self, other: OrthoRotation3D):
+        """
+        Compose with another orthogonal rotation using geometric objects.
+        """
 
         if vecs_parallel(self.axis, other.axis):
             if np.allclose(self.axis, other.axis):
@@ -232,6 +251,9 @@ class OrthoImproperRotation(OrthoTransform3D):
         return
 
     def two_step_form(self):
+        """
+        [OrthoTransform3D, Translation3D]
+        """
         M = OrthoImproperRotation(self.axis, self.angle)
         I = Identity(3)
         return [M, I]
@@ -250,8 +272,9 @@ class OrthoImproperRotation(OrthoTransform3D):
         return NM
 
     def get_reflections(self):
-        # TODO
-        pass
+        R0, R1 = self.rot.get_reflections()
+        R2 = self.refl
+        return [R0, R1, R2]
 
     @classmethod
     def from_two_step_form(cls, M, t):
@@ -296,6 +319,9 @@ class Reflection3D(Transform3D):
 
 
     def two_step_form(self):
+        """
+        [OrthoTransform3D, Translation3D]
+        """
         # TODO
         # q = self.ortho apply p
         # v = p - q
@@ -359,6 +385,9 @@ class Rotation3D(Transform3D):
         return trans_orig_rot.to_trans_rot()
 
     def two_step_form(self):
+        """
+        [OrthoTransform3D, Translation3D]
+        """
         # TODO
         pass
 
@@ -410,6 +439,9 @@ class ImproperRotation3D(Transform3D):
         return
 
     def two_step_form(self):
+        """
+        [OrthoTransform3D, Translation3D]
+        """
         # TODO
         pass
 
@@ -491,6 +523,9 @@ class TransOriginRotation3D(Transform3D):
         return trans_rot
 
     def two_step_form(self):
+        """
+        [OrthoTransform3D, Translation3D]
+        """
         # TODO
         pass
 
@@ -544,6 +579,9 @@ class TransRotation3D(Transform3D):
         return cls(pt, ax, ang, v)
 
     def two_step_form(self):
+        """
+        [OrthoTransform3D, Translation3D]
+        """
         # TODO
         pass
 
@@ -601,6 +639,9 @@ class Translation3D(Transform3D):
         return T
 
     def two_step_form(self):
+        """
+        [OrthoTransform3D, Translation3D]
+        """
         I = Identity(3)
         t = Translation3D(self.vec)
         return [I, t]
@@ -642,7 +683,8 @@ def reflections_for_frame(uvw):
     ijk = np.eye(3)
 
     if np.allclose(uvw, ijk):
-        return Identity(3)
+        I = Identity(3)
+        return [I]
 
     i = ijk[:, [0]]
     j = ijk[:, [1]]
