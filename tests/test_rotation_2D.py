@@ -2,12 +2,12 @@
 import sys
 import numpy as np
 
-from twor.geom.transform_2d import (
+from isom.geom.transform_2d import (
     OrthoReflection2D, compose_ortho_2d, OrthoTransform2D, ortho2D_to_reflections,
     random_rotation_2d, random_ortho_rotation_2d, OrthoRotation2D
 )
-from twor.geom.objects import Glyph2D
-from twor.utils.general import apply_hom_matrix_to_points, apply_transform_sequence_to_glyph
+from isom.geom.objects import Glyph2D
+from isom.utils.general import apply_hom_matrix_to_points, apply_transform_sequence_to_glyph
 
 def main():
 

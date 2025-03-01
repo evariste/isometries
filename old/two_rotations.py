@@ -5,15 +5,15 @@ Date: 08/04/2023
 import os
 import sys, numpy as np
 from matplotlib import pyplot as plt
-from twor.utils.colour import get_Nth_colour, get_color_list
-from twor.io.vtk import make_vtk_polydata, polydata_save
-from twor.utils.general import (
+from isom.utils.colour import get_Nth_colour, get_color_list
+from isom.io.vtk import make_vtk_polydata, polydata_save
+from isom.utils.general import (
     ensure_vec_3d, nearest_point_on_line, validate_pts, 
     rotation_matrix_from_axis_and_angle, 
     axis_from_rotation_matrix, angle_from_rotation_matrix
 )
-from twor.geom.objects import Glyph2D, Glyph3D, Line3D
-from twor.geom.transform import Transform
+from isom.geom.objects import Glyph2D, Glyph3D, Line3D
+from isom.geom.transform import Transform
 
 
 

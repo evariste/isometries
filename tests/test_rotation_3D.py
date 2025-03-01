@@ -2,9 +2,9 @@ import sys
 
 import numpy as np
 
-from twor.utils.general import apply_hom_matrix_to_points
-from twor.geom.objects import Glyph3D
-from twor.geom.transform_3d import random_ortho_rotation_3d, random_rotation_3d, OrthoRotation3D
+from isom.utils.general import apply_hom_matrix_to_points
+from isom.geom.objects import Glyph3D
+from isom.geom.transform_3d import random_ortho_rotation_3d, random_rotation_3d, OrthoRotation3D
 
 # TODO: Two step forms and composition.
 

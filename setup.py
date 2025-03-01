@@ -3,7 +3,7 @@ from setuptools import setup
 
 
 setup(
-    name = 'twor',
+    name = 'isom',
     version = '0.0.1',
     description = 'Investigating rotations in 2D and 3D.',
     author = 'Paul Aljabar',

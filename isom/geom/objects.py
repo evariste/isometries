@@ -7,12 +7,12 @@ Date: 08/06/2023
 """
 
 import numpy as np
-from twor.utils.general import (
+from isom.utils.general import (
     ensure_vec, ensure_unit_vec, vecs_parallel, vecs_perpendicular, cross_product, wrap_angle_minus_pi_to_pi,
     rotation_matrix_from_axis_and_angle
 )
-from twor.utils.vtk import run_triangle_filter
-from twor.io.vtk import make_vtk_polydata, polydata_save
+from isom.utils.vtk import run_triangle_filter
+from isom.io.vtk import make_vtk_polydata, polydata_save
 from matplotlib.patches import Polygon
 
 

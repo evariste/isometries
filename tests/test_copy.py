@@ -1,8 +1,8 @@
 import sys
 import numpy as np
-from twor.geom.transform import Identity, transforms_equal
-from twor.geom.transform_2d import OrthoReflection2D, OrthoRotation2D, Reflection2D, Rotation2D, Translation2D
-from twor.geom.objects import Line2D
+from isom.geom.transform import Identity, transforms_equal
+from isom.geom.transform_2d import OrthoReflection2D, OrthoRotation2D, Reflection2D, Rotation2D, Translation2D
+from isom.geom.objects import Line2D
 
 # TODO: 3D transforms.
 

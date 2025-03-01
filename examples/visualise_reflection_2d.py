@@ -1,8 +1,8 @@
 import sys
 from matplotlib import pyplot as plt
-from twor.geom.objects import Glyph2D
-from twor.geom.transform_2d import random_reflection_2d
-from twor.utils.plotting import set_axis_glyph_bounds
+from isom.geom.objects import Glyph2D
+from isom.geom.transform_2d import random_reflection_2d
+from isom.utils.plotting import set_axis_glyph_bounds
 
 def main():
 

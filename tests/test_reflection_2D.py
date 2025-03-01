@@ -1,9 +1,9 @@
 import sys
 import numpy as np
 
-from twor.geom.objects import Glyph2D
-from twor.geom.transform_2d import random_reflection_2d, random_ortho_reflection_2d
-from twor.utils.general import apply_hom_matrix_to_points
+from isom.geom.objects import Glyph2D
+from isom.geom.transform_2d import random_reflection_2d, random_ortho_reflection_2d
+from isom.utils.general import apply_hom_matrix_to_points
 
 def main():
 

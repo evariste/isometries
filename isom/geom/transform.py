@@ -9,7 +9,7 @@ Date: 08/06/2023
 
 from abc import ABC, abstractmethod
 import numpy as np
-from twor.utils.general import validate_pts
+from isom.utils.general import validate_pts
 
 
 class Transform(ABC):

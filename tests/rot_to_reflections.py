@@ -5,9 +5,9 @@ will generate it.
 
 """
 import numpy as np
-from twor.utils.general import random_rotation_matrix_3D, ensure_vec
-from twor.geom.objects import Plane3D
-from twor.geom.transform_3d import Reflection3D
+from isom.utils.general import random_rotation_matrix_3D, ensure_vec
+from isom.geom.objects import Plane3D
+from isom.geom.transform_3d import Reflection3D
 
 R = random_rotation_matrix_3D()
 

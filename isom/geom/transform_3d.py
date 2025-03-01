@@ -5,12 +5,12 @@ from quaternion import quaternion
 from abc import ABC, abstractmethod
 from typing import List
 
-from twor.utils.general import (
+from isom.utils.general import (
     ensure_unit_vec, ensure_vec, validate_pts, wrap_angle_minus_pi_to_pi, rotate_vector_3d, cross_product,
     angle_between_vectors, vecs_parallel, rotation_matrix_from_axis_and_angle, rotate_vectors_3d
 )
-from twor.geom.transform import Transform, Identity, is_identity
-from twor.geom.objects import Plane3D, Line3D
+from isom.geom.transform import Transform, Identity, is_identity
+from isom.geom.objects import Plane3D, Line3D
 
 class Transform3D(Transform, ABC):
 

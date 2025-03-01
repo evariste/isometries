@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from twor.geom.objects import Glyph2D, get_glyph_bounds
-from twor.geom.transform_2d import Rotation2D
+from isom.geom.objects import Glyph2D, get_glyph_bounds
+from isom.geom.transform_2d import Rotation2D
 
 
 

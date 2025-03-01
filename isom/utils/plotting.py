@@ -1,4 +1,4 @@
-from twor.geom.objects import get_glyph_bounds
+from isom.geom.objects import get_glyph_bounds
 
 
 def set_axis_glyph_bounds(ax, glyphs):

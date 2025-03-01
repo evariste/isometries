@@ -1,6 +1,6 @@
 import numpy as np
-from twor.utils.general import random_rotation_3D, ensure_vec
-from twor.geom.transform_3d import Rotation3D, TransOriginRotation3D
+from isom.utils.general import random_rotation_3D, ensure_vec
+from isom.geom.transform_3d import Rotation3D, TransOriginRotation3D
 
 ax, theta = random_rotation_3D()
 

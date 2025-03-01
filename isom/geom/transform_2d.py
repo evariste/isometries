@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from twor.geom.transform import Transform, Identity, is_identity
+from isom.geom.transform import Transform, Identity, is_identity
 from abc import ABC, abstractmethod
 import numpy as np
 
-from twor.utils.general import (
+from isom.utils.general import (
     ensure_unit_vec, ensure_vec, validate_pts, wrap_angle_minus_pi_to_pi,
 )
 
-from twor.geom.objects import Line2D
+from isom.geom.objects import Line2D
 from typing import List
 
 

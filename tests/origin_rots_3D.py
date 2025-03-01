@@ -1,7 +1,7 @@
 import numpy as np
 
-from twor.utils.general import random_rotation_3D, cross_product, vecs_parallel
-from twor.geom.transform_3d import OrthoRotation3D
+from isom.utils.general import random_rotation_3D, cross_product, vecs_parallel
+from isom.geom.transform_3d import OrthoRotation3D
 
 # Compose two pure rotations:
 
