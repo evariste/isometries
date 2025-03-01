@@ -6,6 +6,7 @@ from twor.utils.general import apply_hom_matrix_to_points
 from twor.geom.objects import Glyph3D
 from twor.geom.transform_3d import random_ortho_rotation_3d, random_rotation_3d, OrthoRotation3D
 
+# TODO: Two step forms and composition.
 
 def main():
 
@@ -13,8 +14,23 @@ def main():
 
     test_inversion()
 
+    test_null_rotation()
+
     return 0
 
+def test_null_rotation():
+    axis = [1, 0, 0]
+    angle = 0
+    rot = OrthoRotation3D(axis, angle)
+
+    glyph = Glyph3D()
+    pts = glyph.points
+
+    pts2 = rot.apply(pts)
+
+    assert np.allclose(pts, pts2), 'Do not expect change in points.'
+
+    return
 
 def test_inversion():
 
