@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 
 """
 Created by: Paul Aljabar
@@ -76,5 +77,25 @@ class Identity(Transform):
         assert isinstance(t, Identity), 'Expect first and second transform to be identity.'
         return Identity(M.dim)
 
+    def __repr__(self):
+        return f'Identity({self.dim})'
+
+    def copy(self):
+        return Identity(self.dim)
+
 def is_identity(transf: Transform):
     return isinstance(transf, Identity)
+
+
+def transforms_equal(t_a: Transform, t_b: Transform):
+
+    M_a = t_a.get_matrix()
+    M_b = t_b.get_matrix()
+
+
+    if not(M_a.shape == M_b.shape):
+        print('Warning: Comparing transformations with different dimensions.', file=sys.stderr)
+        return False
+
+    return np.allclose(M_a, M_b)
+
