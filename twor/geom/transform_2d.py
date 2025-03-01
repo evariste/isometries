@@ -13,7 +13,10 @@ from typing import List
 
 
 class Transform2D(Transform, ABC):
-    pass
+
+    def copy(self):
+        return eval(self.__repr__())
+
 
 class OrthoTransform2D(Transform2D, ABC):
 
@@ -96,7 +99,12 @@ class OrthoReflection2D(OrthoTransform2D):
         M = OrthoReflection2D(self.direction)
         return [M]
 
+    def __repr__(self):
+        return f'OrthoReflection2D({self.direction.tolist()})'
 
+    def __str__(self):
+        d = np.round(self.direction, 2).tolist()
+        return f'OrthoReflection2D({d})'
 
 
 class OrthoRotation2D(OrthoTransform2D):
@@ -187,7 +195,12 @@ class OrthoRotation2D(OrthoTransform2D):
     def get_reflections(self):
         return [self.refl_1, self.refl_2]
 
+    def __repr__(self):
+        return f'OrthoRotation2D({self.angle})'
 
+    def __str__(self):
+        a = np.round(self.angle, 2)
+        return f'OrthoRotation2D({a})'
 
 class Reflection2D(Transform2D):
     """
@@ -287,10 +300,15 @@ class Reflection2D(Transform2D):
         return T @ M @ T_inv
 
     def __repr__(self):
-        pt = np.round(self.pt.flatten(), 2)
-        direction = np.round(self.line.direction.flatten(), 2)
-        return f'Reflection2D(\n {pt},\n {direction}\n)'
+        l = self.line.__repr__()
+        return f"""Reflection2D(
+{l}
+)"""
 
+    def __str__(self):
+        return f"""Reflection2D(
+{self.line}
+)"""
 
 
 class Rotation2D(Transform2D):
@@ -464,10 +482,18 @@ class Rotation2D(Transform2D):
         return T @ R @ T_inv
 
     def __repr__(self):
-        centre = np.round(self.centre.flatten(), 2)
-        theta = np.round(self.angle, 2)
-        return f'Rotation2D(\n {centre},\n {theta}\n)'
+        return f"""Rotation2D(
+{self.centre.tolist()},
+{self.angle},
+)"""
 
+    def __str__(self):
+        c = np.round(self.centre, 2).tolist()
+        a = np.round(self.angle, 2)
+        return f"""Rotation2D(
+{c},
+{a},
+)"""
 
 class Translation2D(Transform2D):
 
@@ -485,10 +511,6 @@ class Translation2D(Transform2D):
         T[:2, -1] = np.squeeze(self.vec)
         return T
 
-    def __repr__(self):
-        v = np.round(self.vec.flatten(), 2)
-        return f'Translation2D(\n {v}\n)'
-
     def two_step_form(self):
         I = Identity(2)
         t = Translation2D(self.vec)
@@ -504,14 +526,24 @@ class Translation2D(Transform2D):
         assert is_translation_2d(t), 'Expect second transform to be a translation.'
         return Translation2D(t.vec)
 
+    def __repr__(self):
+        v = self.vec.flatten().tolist()
+        return f'Translation2D({v})'
 
-def compose_2d(transf_a: Transform2D, transf_b: Transform2D):
+    def __str__(self):
+        v = np.round(self.vec, 2).tolist()
+        return f'Translation2D({v})'
+
+
+def compose_2d(transf_A: Transform2D, transf_B: Transform2D):
     """
     Compose two 2D transformations.
+    Return the 2D transformation that results from applying transf_A
+    followed by transf_B.
     """
 
-    M_a, t_a = transf_a.two_step_form()
-    M_b, t_b = transf_b.two_step_form()
+    M_a, t_a = transf_A.two_step_form()
+    M_b, t_b = transf_B.two_step_form()
 
     # Application sequence (starting from the left:
     # M_a t_a M_b t_b
@@ -519,15 +551,17 @@ def compose_2d(transf_a: Transform2D, transf_b: Transform2D):
     # Flip the middle pair.
     M_c, t_c = flip_two_step_form_2D([t_a, M_b])
 
-    # Sequence is now
+    # Sequence can now be:
     # M_a M_c t_c t_b
 
     # We should have M_c == M_b
-    assert M_b.matrix_equals(M_c)
+    assert M_b.matrix_equals(M_c), 'Unexpected change in orthogonal part after flip.'
 
+    # Orthogonal part of result.
     M_out = compose_ortho_2d(M_a, M_b)
 
     v = ensure_vec([0, 0])
+    # Accumulate translation vectors (if they are not identity transforms).
     if is_translation_2d(t_b):
         v += t_b.vec
     if is_translation_2d(t_c):
