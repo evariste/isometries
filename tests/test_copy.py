@@ -17,7 +17,7 @@ def test_copy_2D():
     I = Identity(2)
     I_B = I.copy()
 
-    assert transforms_equal(I, I_B)
+    assert transforms_equal(I, I_B), 'Copy fail: identity'
 
     v_dir = np.random.rand(2) - [0.5, 0.5]
     alpha = np.random.rand() * 2.0 * np.pi
@@ -30,31 +30,31 @@ def test_copy_2D():
     T_B = T.copy()
     print('-' * 40)
     print(T)
-    assert transforms_equal(T, T_B)
+    assert transforms_equal(T, T_B), 'Copy fail: OrthoReflection2D'
 
     T = OrthoRotation2D(alpha)
     T_B = T.copy()
     print('-' * 40)
     print(T)
-    assert transforms_equal(T, T_B)
+    assert transforms_equal(T, T_B), 'Copy fail: OrthoRotation2D'
 
     T = Reflection2D(line)
     T_B = T.copy()
     print('-' * 40)
     print(T)
-    assert transforms_equal(T, T_B)
+    assert transforms_equal(T, T_B), 'Copy fail: Reflection2D'
 
     T = Rotation2D(pt, alpha)
     T_B = T.copy()
     print('-' * 40)
     print(T)
-    assert transforms_equal(T, T_B)
+    assert transforms_equal(T, T_B), 'Copy fail: Rotation2D'
 
     T = Translation2D(pt)
     T_B = T.copy()
     print('-' * 40)
     print(T)
-    assert transforms_equal(T, T_B)
+    assert transforms_equal(T, T_B), 'Copy fail: Translation2D'
 
     return
 

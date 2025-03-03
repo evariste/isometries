@@ -1,10 +1,16 @@
+from __future__ import annotations
+
 import sys
 
-from isom.geom.transform_2d import (
-    random_reflection_2d, random_rotation_2d, random_ortho_reflection_2d, random_ortho_rotation_2d, Transform2D,
-    flip_two_step_form_2D, compose_2d, transf_2d_from_two_step
+from isom.geom.objects import Glyph3D
+from isom.geom.transform_3d import (
+random_ortho_reflection_3d, random_ortho_rotation_3d, random_ortho_improper_rotation_3d,
+random_reflection_3d, random_rotation_3d, random_improper_rotation_3d,
+Transform3D,
+transf_3d_from_two_step,
+flip_two_step_form_3D,
+compose_3d,
 )
-from isom.geom.objects import Glyph2D
 
 def main():
 
@@ -17,22 +23,22 @@ def main():
     return 0
 
 
-def test_back_conversion(transf: Transform2D):
+def test_back_conversion(transf: Transform3D):
     # M is orthogonal, t is a translation.
     M, t = transf.two_step_form()
 
-    transf_B = transf_2d_from_two_step(M, t)
+    transf_B = transf_3d_from_two_step(M, t)
 
     assert transf.matrix_equals(transf_B), 'Recovered transform is not the same.'
 
     return
 
 
-def test_two_step_form_equivalence(transf: Transform2D):
+def test_two_step_form_equivalence(transf: Transform3D):
     # M is orthogonal, t is a translation.
     M, t = transf.two_step_form()
 
-    glyph = Glyph2D()
+    glyph = Glyph3D()
 
     # Direct transformation.
     glyph_A = glyph.apply_transformation(transf)
@@ -44,14 +50,14 @@ def test_two_step_form_equivalence(transf: Transform2D):
 
     return
 
-def test_flip_two_step(transf: Transform2D):
+def test_flip_two_step(transf: Transform3D):
 
     # M is orthogonal, t is a translation.
     M, t = transf.two_step_form()
 
-    s, N = flip_two_step_form_2D([M, t])
+    s, N = flip_two_step_form_3D([M, t])
 
-    transf_B = compose_2d(s, N)
+    transf_B = compose_3d(s, N)
 
     assert transf.matrix_equals(transf_B), 'Flipped two-step form does not match original.'
 
@@ -62,17 +68,23 @@ def run_tests_two_step_form_equivalence():
 
     print('Running tests for two-step equivalence.')
 
-    o_refl = random_ortho_reflection_2d()
+    o_refl = random_ortho_reflection_3d()
     test_two_step_form_equivalence(o_refl)
 
-    o_rot = random_ortho_rotation_2d()
+    o_rot = random_ortho_rotation_3d()
     test_two_step_form_equivalence(o_rot)
 
-    refl = random_reflection_2d()
+    o_imp_rot = random_ortho_improper_rotation_3d()
+    test_two_step_form_equivalence(o_imp_rot)
+
+    refl = random_reflection_3d()
     test_two_step_form_equivalence(refl)
 
-    rot = random_rotation_2d()
+    rot = random_rotation_3d()
     test_two_step_form_equivalence(rot)
+
+    imp_rot = random_improper_rotation_3d()
+    test_two_step_form_equivalence(imp_rot)
 
     return
 
@@ -81,16 +93,16 @@ def run_tests_flip_two_step():
 
     print('Running tests for flipping two-step form.')
 
-    o_refl = random_ortho_reflection_2d()
+    o_refl = random_ortho_reflection_3d()
     test_flip_two_step(o_refl)
 
-    o_rot = random_ortho_rotation_2d()
+    o_rot = random_ortho_rotation_3d()
     test_flip_two_step(o_rot)
 
-    refl = random_reflection_2d()
+    refl = random_reflection_3d()
     test_flip_two_step(refl)
 
-    rot = random_rotation_2d()
+    rot = random_rotation_3d()
     test_flip_two_step(rot)
 
     return
@@ -100,16 +112,16 @@ def run_tests_back_conversion():
 
     print('Running tests for back conversion.')
 
-    o_refl = random_ortho_reflection_2d()
+    o_refl = random_ortho_reflection_3d()
     test_back_conversion(o_refl)
 
-    o_rot = random_ortho_rotation_2d()
+    o_rot = random_ortho_rotation_3d()
     test_back_conversion(o_rot)
 
-    refl = random_reflection_2d()
+    refl = random_reflection_3d()
     test_back_conversion(refl)
 
-    rot = random_rotation_2d()
+    rot = random_rotation_3d()
     test_back_conversion(rot)
 
     return
