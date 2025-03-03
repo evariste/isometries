@@ -1,5 +1,12 @@
-## two_rotations
-Composing two rotations in 2-D and 3-D
+## A library for working with isometries and orthogonal transforms.
+
+Starting with a question on the composition of two rotations (in 2-D and 3-D),
+this code was developed to represent isometries and orthogonal transformations.
+
+The emphasis is on using direct geometric methods (rather than, say, matrices)
+to model rotations, etc.
+
+
 
 # TODO: Expand this.
 
