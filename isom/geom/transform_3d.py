@@ -13,13 +13,17 @@ from isom.geom.transform import Transform, Identity, is_identity
 from isom.geom.objects import Plane3D, Line3D
 
 class Transform3D(Transform, ABC):
-
+    """
+    Abstract base class for 3D isometries.
+    """
     def copy(self):
         return eval(self.__repr__())
 
 
 class OrthoTransform3D(Transform3D, ABC):
-
+    """
+    Abstract base class for 3D orthogonal transformations.
+    """
     @abstractmethod
     def get_reflections(self) -> List[OrthoReflection3D]:
         """
@@ -40,9 +44,8 @@ class OrthoReflection3D(OrthoTransform3D):
 
     def __init__(self, normal):
         """
-        Reflection in a plane with the givennormal.
+        Reflection in a plane with the given normal.
         """
-
         super(OrthoReflection3D, self).__init__()
         self.normal = ensure_unit_vec(normal)
         self.plane = Plane3D(self.normal, [0, 0, 0])
@@ -56,18 +59,21 @@ class OrthoReflection3D(OrthoTransform3D):
         """
         [OrthoTransform3D, Translation3D]
         """
-        M = OrthoReflection3D(self.normal)
-        I = Identity(3)
-        return [M, I]
+        return [self.copy(), Identity(3)]
 
     @classmethod
     def from_two_step_form(cls, M, t):
-        # TODO
-        pass
+        assert is_identity(t), 'Expect no translation.'
+
+        if is_identity(M):
+            return Identity(3)
+
+        assert isinstance(M, OrthoReflection3D), 'Expect first transform to be orthogonal reflection.'
+        return M.copy()
+
 
     def inverse(self):
-        M = OrthoReflection3D(self.normal)
-        return M
+        return self.copy()
 
     def apply(self, points):
         pts = validate_pts(points)
@@ -86,6 +92,10 @@ class OrthoReflection3D(OrthoTransform3D):
         return M
 
     def __repr__(self):
+        n = self.normal.tolist()
+        return f'OrthoReflection3D(\n    {n}\n)'
+
+    def __str__(self):
         n = np.round(self.normal.flatten(), 2).tolist()
         return f'OrthoReflection3D(\n    {n}\n)'
 
@@ -122,24 +132,25 @@ class OrthoRotation3D(OrthoTransform3D):
         """
         [OrthoTransform3D, Translation3D]
         """
-        M = OrthoRotation3D(self.axis, self.angle)
-        I = Identity(3)
-        return [M, I]
-        pass
+        return [self.copy(), Identity(3)]
 
     @classmethod
     def from_two_step_form(cls, M, t):
-        # TODO
-        pass
+        assert is_identity(t), 'Expect no translation.'
+
+        if is_identity(M):
+            return Identity(3)
+
+        assert isinstance(M, OrthoRotation3D), 'Expect first transform to be orthogonal rotation.'
+        return M.copy()
+
 
     def inverse(self):
         M = OrthoRotation3D(self.axis, -1.0 * self.angle)
         return M
 
     def get_reflections(self):
-        R0 = OrthoReflection3D(self.refl_0.normal)
-        R1 = OrthoReflection3D(self.refl_1.normal)
-        return [R0, R1]
+        return [self.refl_0.copy(), self.refl_1.copy()]
 
 
     def to_quaternion(self):
@@ -231,16 +242,21 @@ class OrthoRotation3D(OrthoTransform3D):
         return pts
 
     def __repr__(self):
+        ax = self.axis.tolist()
+        ang = self.angle
+        return f'OrthoRotation3D(\n {ax},\n {ang}\n)'
+
+    def __str__(self):
         ax = np.round(self.axis.flatten(), 2).tolist()
         ang = np.round(self.angle, 2)
-        return f'OriginRotation3D(\n {ax},\n {ang}\n)'
+        return f'OrthoRotation3D(\n {ax},\n {ang}\n)'
 
 
-class OrthoImproperRotation(OrthoTransform3D):
+class OrthoImproperRotation3D(OrthoTransform3D):
 
     def __init__(self, axis, theta):
 
-        super(OrthoImproperRotation, self).__init__()
+        super(OrthoImproperRotation3D, self).__init__()
         self.axis = ensure_unit_vec(axis)
         self.angle = wrap_angle_minus_pi_to_pi(theta)
 
@@ -254,9 +270,17 @@ class OrthoImproperRotation(OrthoTransform3D):
         """
         [OrthoTransform3D, Translation3D]
         """
-        M = OrthoImproperRotation(self.axis, self.angle)
-        I = Identity(3)
-        return [M, I]
+        return [self.copy(), Identity(3)]
+
+    @classmethod
+    def from_two_step_form(cls, M, t):
+        assert is_identity(t), 'Expect no translation.'
+
+        if is_identity(M):
+            return Identity(3)
+
+        assert isinstance(M, OrthoImproperRotation3D), 'Expect first transform to be orthogonal improper rotation.'
+        return M.copy()
 
     def apply(self, points):
         pts = validate_pts(points)
@@ -276,17 +300,64 @@ class OrthoImproperRotation(OrthoTransform3D):
         R2 = self.refl
         return [R0, R1, R2]
 
+    def inverse(self):
+        # TODO
+        pass
+
+    def __repr__(self):
+        ax = self.axis.tolist()
+        theta = self.angle
+        return f"""OrthoImproperRotation(
+{ax},
+{theta},
+)"""
+
+    def __str__(self):
+        ax = np.round(self.axis, 2).tolist()
+        theta = np.round(self.angle, 2)
+        return f"""OrthoImproperRotation(
+{ax},
+{theta},
+)"""
+
+
+
+
+
+class Translation3D(Transform3D):
+
+    def __init__(self, v):
+
+        super().__init__()
+        self.vec = ensure_vec(v)
+
+    def apply(self, points):
+        pts = validate_pts(points)
+        return pts + self.vec
+
+    def get_matrix(self):
+        T = np.eye(4)
+        T[:3, -1] = np.squeeze(self.vec)
+        return T
+
+    def two_step_form(self):
+        """
+        [OrthoTransform3D, Translation3D]
+        """
+        return [Identity(3), self.copy()]
+
     @classmethod
     def from_two_step_form(cls, M, t):
         # TODO
         pass
 
-    def inverse(self):
-        # TODO
-        pass
+    def __repr__(self):
+        v = self.vec.tolist()
+        return f'Translation3D(\n {v}\n)'
 
-
-
+    def __str__(self):
+        v = np.round(self.vec.flatten(), 2)
+        return f'Translation3D(\n {v}\n)'
 
 
 class Reflection3D(Transform3D):
@@ -322,11 +393,12 @@ class Reflection3D(Transform3D):
         """
         [OrthoTransform3D, Translation3D]
         """
-        # TODO
-        # q = self.ortho apply p
-        # v = p - q
-        # return self.ortho, t_v
-        pass
+        p = self.point
+        q = self.ortho_reflection.apply(p)
+        v = p - q
+        t_v = Translation3D(v)
+        M = self.ortho_reflection.copy()
+        return [M, t_v]
 
     @classmethod
     def from_two_step_form(cls, M, t):
@@ -345,14 +417,22 @@ class Reflection3D(Transform3D):
         return T @ M @ T_inv
 
     def __repr__(self):
-        normal = np.round(self.plane.normal.flatten(), 2).tolist()
-        pt = np.round(self.plane.point.flatten(), 2).tolist()
-        return f'Reflection3D(\n Plane3D(\n {normal},\n {pt}\n))'
+        plane_repr = repr(self.plane)
+        return f'Reflection3D(\n{plane_repr}\n))'
+
+    def __str__(self):
+        plane_str = str(self.plane)
+        return f'Reflection3D(\n{plane_str}\n))'
 
 
 class Rotation3D(Transform3D):
 
-    def __init__(self, point, axis_dir, theta):
+    def __init__(
+            self,
+            point,
+            axis_dir,
+            theta
+    ):
         """
         A rotation through 'theta' about an axis that
         goes through 'point' with the direction 'axis_dir'.
@@ -371,25 +451,33 @@ class Rotation3D(Transform3D):
         return
 
     def followed_by(self, other: Rotation3D):
-        L = self.ortho_rot
-        K = other.ortho_rot
-        M = L.followed_by(K)
-
-        p = self.point
-        r = other.point
-        u = r - K.apply(r - p) - M.apply(p)
-        trans = Translation3D(u)
-
-        trans_orig_rot = TransOriginRotation3D.from_transforms(M, trans)
-
-        return trans_orig_rot.to_trans_rot()
+        # TODO:
+        pass
+        # L = self.ortho_rot
+        # K = other.ortho_rot
+        # M = L.followed_by(K)
+        #
+        # p = self.point
+        # r = other.point
+        # u = r - K.apply(r - p) - M.apply(p)
+        # trans = Translation3D(u)
+        #
+        # trans_orig_rot = TransOriginRotation3D.from_transforms(M, trans)
+        #
+        # return trans_orig_rot.to_trans_rot()
 
     def two_step_form(self):
         """
         [OrthoTransform3D, Translation3D]
         """
-        # TODO
-        pass
+
+        p = self.point
+        q = self.ortho_rot.apply(p)
+        v = p - q
+        t_v = Translation3D(v)
+        M = self.ortho_rot.copy()
+        return [M, t_v]
+
 
     @classmethod
     def from_two_step_form(cls, M, t):
@@ -397,8 +485,10 @@ class Rotation3D(Transform3D):
         pass
 
     def to_trans_origin_rot(self):
-        vec = self.point - self.ortho_rot.apply(self.point)
-        return TransOriginRotation3D(vec, self.ortho_rot.axis, self.ortho_rot.angle)
+        # TODO: ?? If at all.
+        pass
+        # vec = self.point - self.ortho_rot.apply(self.point)
+        # return TransOriginRotation3D(vec, self.ortho_rot.axis, self.ortho_rot.angle)
 
     def apply(self, points):
         pts = validate_pts(points)
@@ -415,12 +505,6 @@ class Rotation3D(Transform3D):
 
         return M_T @ M_rot @ M_T_inv
 
-    def __repr__(self):
-        c = np.round(self.point.flatten(), 2).tolist()
-        ax = np.round(self.ortho_rot.axis.flatten(), 2).tolist()
-        ang = np.round(self.ortho_rot.angle, 2).tolist()
-        return f'Rotation3D(\n {c},\n {ax},\n {ang}\n)'
-
     def is_close(self, other: Rotation3D):
 
         R = self.ortho_rot.get_matrix()
@@ -431,19 +515,48 @@ class Rotation3D(Transform3D):
 
         return np.allclose(R, R_other) and np.allclose(p, p_other)
 
+    def __repr__(self):
+        c = self.point.tolist()
+        ax = self.ortho_rot.axis.tolist()
+        ang = self.ortho_rot.angle.tolist()
+        return f'Rotation3D(\n {c},\n {ax},\n {ang}\n)'
+
+
+    def __str__(self):
+        c = np.round(self.point.flatten(), 2).tolist()
+        ax = np.round(self.ortho_rot.axis.flatten(), 2).tolist()
+        ang = np.round(self.ortho_rot.angle, 2).tolist()
+        return f'Rotation3D(\n {c},\n {ax},\n {ang}\n)'
+
+
 class ImproperRotation3D(Transform3D):
 
-    def __init__(self):
+    def __init__(
+            self,
+            point,
+            axis_dir,
+            theta
+    ):
         super(ImproperRotation3D, self).__init__()
 
+        self.axis = ensure_unit_vec(axis_dir)
+        self.angle = wrap_angle_minus_pi_to_pi(theta)
+
+        self.point = ensure_vec(point)
+        self.ortho_imp_rot = OrthoImproperRotation3D(self.axis, self.angle)
+
         return
 
     def two_step_form(self):
         """
         [OrthoTransform3D, Translation3D]
         """
-        # TODO
-        pass
+        p = self.point
+        q = self.ortho_imp_rot.apply(p)
+        v = p - q
+        t_v = Translation3D(v)
+        M = self.ortho_imp_rot.copy()
+        return [M, t_v]
 
     @classmethod
     def from_two_step_form(cls, M, t):
@@ -451,209 +564,109 @@ class ImproperRotation3D(Transform3D):
         pass
 
     def get_matrix(self):
-        # TODO
-        pass
+        t_p = Translation3D(self.point)
+        t_p_inv = Translation3D(-1.0 * self.point)
 
-    def apply(self, points):
-        # TODO
-        pass
+        T_p = t_p.get_matrix()
+        T_p_inv = t_p_inv.get_matrix()
+        M = self.ortho_imp_rot.get_matrix()
 
-    def __repr__(self):
-        # TODO
-        pass
-
-
-
-class TransOriginRotation3D(Transform3D):
-    """
-    A two-step transformation of the form
-    T M : x -> T ( M (x) )
-    where
-     - M is an origin rotation
-     - T is a translation.
-    """
-    def __init__(self, transvector, axis, theta):
-        super().__init__()
-        self.origin_rot = OrthoRotation3D(axis, theta)
-        self.tra = Translation3D(transvector)
-
-        return
-
-    @classmethod
-    def from_transforms(cls, originRotation: OrthoRotation3D, trans: Translation3D):
-        v = trans.vec
-        ax = originRotation.axis
-        ang = originRotation.angle
-        return cls(v, ax, ang)
-
-    def to_trans_rot(self):
-
-        v = self.tra.vec
-
-        c = self.origin_rot.axis
-        theta = self.origin_rot.angle
-
-        v_para = c * (c.T @ v)
-        u = v - v_para
-
-        # TODO: what if u is zero vec?
-
-        c_cross_u = cross_product(c, u)
-
-        # TODO what if c x u is zero.
-
-        w = ensure_unit_vec(c_cross_u)
-
-        len_u = np.sqrt(np.sum(u * u))
-
-        OA = len_u / 2.0 / np.tan(theta / 2.0)
-
-        OA_vec = OA * w
-
-        p = OA_vec + u / 2.0
-
-
-        r3d = Rotation3D(p, c, theta)
-
-        tra_new = Translation3D(v_para)
-
-        trans_rot = TransRotation3D.from_transforms(r3d, tra_new)
-
-
-        return trans_rot
-
-    def two_step_form(self):
-        """
-        [OrthoTransform3D, Translation3D]
-        """
-        # TODO
-        pass
-
-    @classmethod
-    def from_two_step_form(cls, M, t):
-        # TODO
-        pass
-
-    def get_matrix(self):
-        M = self.origin_rot.get_matrix()
-        T = self.tra.get_matrix()
-        return T @ M
-
-    def apply(self, points):
-        pts = self.origin_rot.apply(points)
-        pts = self.tra.apply(pts)
-        return pts
-
-
-    def __repr__(self):
-        strs = ['TransOriginRotation3D', repr(self.origin_rot), repr(self.tra)]
-        return '\n'.join(strs)
-
-class TransRotation3D(Transform3D):
-    """
-    A two-step transformation of the form
-    T M : x -> T ( M (x) )
-
-    where:
-     - M is an general rotation
-     - T is a translation, either zero or parallel to the axis of M.
-    """
-
-
-    def __init__(self, point, axis, theta, transvector):
-        super().__init__()
-
-        self.gen_rot = Rotation3D(point, axis, theta)
-        self.tra = Translation3D(transvector)
-
-        return
-
-    @classmethod
-    def from_transforms(cls, rotation: Rotation3D, trans: Translation3D):
-
-        pt = rotation.point
-        ax = rotation.ortho_rot.axis
-        ang = rotation.ortho_rot.angle
-        v = trans.vec
-
-        return cls(pt, ax, ang, v)
-
-    def two_step_form(self):
-        """
-        [OrthoTransform3D, Translation3D]
-        """
-        # TODO
-        pass
-
-    @classmethod
-    def from_two_step_form(cls, M, t):
-        # TODO
-        pass
-
-    def apply(self, points):
-        pts = self.gen_rot.apply(points)
-        pts = self.tra.apply(pts)
-        return pts
-
-    def get_matrix(self):
-        M = self.gen_rot.get_matrix()
-        T = self.tra.get_matrix()
-        return T @ M
-
-
-    def is_close(self, other: TransRotation3D):
-
-        r3d = self.gen_rot
-        r3d_other = other.gen_rot
-
-        v = self.tra.vec
-        v_other = other.tra.vec
-
-
-        return r3d.is_close(r3d_other) and np.allclose(v, v_other)
-
-
-
-    def __repr__(self):
-        strs = ['TransRotation3D', repr(self.gen_rot), repr(self.tra)]
-        return '\n'.join(strs)
-
-
-
-
-
-class Translation3D(Transform3D):
-
-    def __init__(self, v):
-
-        super().__init__()
-        self.vec = ensure_vec(v)
+        return T_p @ M @ T_p_inv
 
     def apply(self, points):
         pts = validate_pts(points)
-        return pts + self.vec
+
+        t_p = Translation3D(self.point)
+        t_p_inv = Translation3D(-1.0 * self.point)
+
+        pts = t_p_inv.apply(pts)
+        pts = self.ortho_imp_rot.apply(pts)
+        pts = t_p.apply(pts)
+
+        return pts
+
+    def __repr__(self):
+        p = self.point.tolist()
+        ax = self.axis.tolist()
+        ang = self.angle
+        return f"""ImproperRotation3D(
+{p},
+{ax},
+{ang}
+)"""
+
+    def __str__(self):
+        p = np.round(self.point, 2).tolist()
+        ax = np.round(self.axis, 2).tolist()
+        ang = np.round(self.angle, 2)
+        return f"""ImproperRotation3D(
+{p},
+{ax},
+{ang}
+)"""
+
+
+class GlideReflection3D(Transform3D):
+    """
+    A combination of a reflection and a translation
+    parallel to the plane of reflection.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+        return
+
+    def apply(self, points):
+        pass
 
     def get_matrix(self):
-        T = np.eye(4)
-        T[:3, -1] = np.squeeze(self.vec)
-        return T
+        pass
 
     def two_step_form(self):
-        """
-        [OrthoTransform3D, Translation3D]
-        """
-        I = Identity(3)
-        t = Translation3D(self.vec)
-        return [I, t]
+        pass
 
     @classmethod
     def from_two_step_form(cls, M, t):
-        # TODO
+        pass
+
+
+    def __repr__(self):
+        pass
+
+    def __str__(self):
+        pass
+
+
+class Twist3D(Transform3D):
+    """
+    A combination of a rotation and a translation
+    parallel to the axis of rotation.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+        return
+
+    def apply(self, points):
+        pass
+
+    def get_matrix(self):
+        pass
+
+    def two_step_form(self):
+        pass
+
+    @classmethod
+    def from_two_step_form(cls, M, t):
         pass
 
     def __repr__(self):
-        v = np.round(self.vec.flatten(), 2)
-        return f'Translation3D(\n {v}\n)'
+        pass
+
+    def __str__(self):
+        pass
 
 
 def frame_orthonormal(uvw):
@@ -667,6 +680,17 @@ def frame_orthonormal(uvw):
         np.eye(3)
     )
 
+def transf_3d_from_two_step(M, t):
+    # TODO:
+    pass
+
+def flip_two_step_form_3D(Mt):
+    # TODO:
+    pass
+
+def compose_3d(A, B):
+    # TODO:
+    pass
 
 def reflections_for_frame(uvw):
     """
@@ -755,9 +779,24 @@ def random_ortho_rotation_3d():
 
 def random_rotation_3d():
     # Random 3D rotation.
+    P = np.random.rand(3) * 10
     axis = np.random.rand(3) - [0.5, 0.5, 0.5]
     alpha = np.random.rand() * 2.0 * np.pi
-    P = np.random.rand(3) * 10
 
     rot = Rotation3D(P, axis, alpha)
     return rot
+
+def random_ortho_improper_rotation_3d():
+    # Random orthogonal 3D improper rotation.
+    axis = np.random.rand(3) - [0.5, 0.5, 0.5]
+    alpha = np.random.rand() * 2.0 * np.pi
+
+    return OrthoImproperRotation3D(axis, alpha)
+
+def random_improper_rotation_3d():
+    # Random 3D improper rotation.
+    P = np.random.rand(3) * 10
+    axis = np.random.rand(3) - [0.5, 0.5, 0.5]
+    alpha = np.random.rand() * 2.0 * np.pi
+    return ImproperRotation3D(P, axis, alpha)
+
