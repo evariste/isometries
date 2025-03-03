@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 from isom.utils.general import (
-    ensure_unit_vec, ensure_vec, validate_pts, wrap_angle_minus_pi_to_pi,
+    ensure_unit_vec, ensure_vec, validate_pts, wrap_angle_minus_pi_to_pi, vecs_parallel, vecs_perpendicular,
 )
 
 from isom.geom.objects import Line2D
@@ -92,7 +92,7 @@ class OrthoReflection2D(OrthoTransform2D):
             return Identity(2)
 
         assert isinstance(M, OrthoReflection2D), 'Expect first transform to be orthogonal reflection.'
-        return OrthoReflection2D(M.direction)
+        return M.copy()
 
 
     def get_reflections(self):
@@ -190,7 +190,7 @@ class OrthoRotation2D(OrthoTransform2D):
             return Identity(2)
 
         assert isinstance(M, OrthoRotation2D), 'Expect first transform to be orthogonal rotation.'
-        return OrthoRotation2D(M.angle)
+        return M.copy()
 
     def get_reflections(self):
         return [self.refl_1, self.refl_2]
@@ -201,6 +201,48 @@ class OrthoRotation2D(OrthoTransform2D):
     def __str__(self):
         a = np.round(self.angle, 2)
         return f'OrthoRotation2D({a})'
+
+
+class Translation2D(Transform2D):
+
+    def __init__(self, v):
+
+        super().__init__()
+        self.vec = ensure_vec(v)
+
+    def apply(self, points):
+        pts = validate_pts(points)
+        return pts + self.vec
+
+    def get_matrix(self):
+        T = np.eye(3)
+        T[:2, -1] = np.squeeze(self.vec)
+        return T
+
+    def two_step_form(self):
+        I = Identity(2)
+        t = Translation2D(self.vec)
+        return [I, t]
+
+    @classmethod
+    def from_two_step_form(cls, M, t):
+        assert is_identity(M), 'Expect first transform to be identity.'
+
+        if is_identity(t):
+            return Identity(2)
+
+        assert is_translation_2d(t), 'Expect second transform to be a translation.'
+        return t.copy()
+
+    def __repr__(self):
+        v = self.vec.flatten().tolist()
+        return f'Translation2D({v})'
+
+    def __str__(self):
+        v = np.round(self.vec, 2).tolist()
+        return f'Translation2D({v})'
+
+
 
 class Reflection2D(Transform2D):
     """
@@ -238,11 +280,19 @@ class Reflection2D(Transform2D):
         if is_identity(M):
             return t
 
+        assert isinstance(M, OrthoReflection2D), 'Expect first transform to be an orthogonal reflection.'
+
         if is_identity(t):
             return M
 
-        assert isinstance(M, OrthoReflection2D), 'Expect first transform to be an orthogonal reflection.'
         assert is_translation_2d(t), 'Expect second transform to be a translation.'
+
+        if not vecs_perpendicular(t.vec, M.direction):
+            # Some component of translation is parallel to the line
+            # of reflection. Return a glide reflection.
+            return GlideReflection2D.from_two_step_form(M, t)
+
+        # t is perpendicular to the reflection line.
 
         # Origin.
         O = ensure_vec([0, 0])
@@ -252,21 +302,19 @@ class Reflection2D(Transform2D):
 
         if np.allclose(O, P):
             # Origin is on the plane of reflection.
-            # Transform is orthogonal.
+            # Transform is orthogonal. Should not happen given checking t
+            # for identity above. But anyway ...
             return M
 
-        # O and P are distinct.
+        assert vecs_parallel(M.normal, P - O), 'Expect pure reflection.'
+
+        # O and P are distinct and the line OP is perpendicular to the line of reflection.
 
         # Point on reflection line.
         Q = 0.5 * (O + P)
 
-        # Normal to reflection line.
-        normal_dir = P
-        x, y = normal_dir
-        line_dir = ensure_vec([-1.0 * y, x])
-
         # Line of reflection.
-        line = Line2D(Q, line_dir)
+        line = Line2D(Q, M.direction)
 
         return Reflection2D(line)
 
@@ -346,10 +394,11 @@ class Rotation2D(Transform2D):
         if is_identity(M):
             return t
 
+        assert isinstance(M, OrthoRotation2D), 'Expect first transform to be a rotation.'
+
         if is_identity(t):
             return M
 
-        assert isinstance(M, OrthoRotation2D), 'Expect first transform to be a rotation.'
         assert isinstance(t, Translation2D), 'Expect second transform to be a translation.'
 
         # Origin.
@@ -361,7 +410,7 @@ class Rotation2D(Transform2D):
         if np.allclose(O, P):
             # Origin is fixed the composition of M and t.
             # Axis passes through O, result is orthogonal.
-            return M
+            return M.copy()
 
         # O and P are distinct.
 
@@ -495,45 +544,92 @@ class Rotation2D(Transform2D):
 {a},
 )"""
 
-class Translation2D(Transform2D):
+class GlideReflection2D(Transform2D):
+    # TODO:
 
-    def __init__(self, v):
-
+    def __init__(self, line: Line2D, displacement: float):
+        """
+        Displacement is in direction of 'direction'.
+        Can be positive or negative.
+        """
         super().__init__()
-        self.vec = ensure_vec(v)
+
+        self.displacement = displacement
+        self.line = line
+
+        self.reflection = Reflection2D(self.line)
+        self.translation = Translation2D(self.displacement * self.direction)
+
+        return
 
     def apply(self, points):
         pts = validate_pts(points)
-        return pts + self.vec
+        pts = self.reflection.apply(pts)
+        pts = self.translation.apply(pts)
+        return pts
 
     def get_matrix(self):
-        T = np.eye(3)
-        T[:2, -1] = np.squeeze(self.vec)
-        return T
+        M = self.reflection.get_matrix()
+        N = self.translation.get_matrix()
+        return N @ M
 
     def two_step_form(self):
-        I = Identity(2)
-        t = Translation2D(self.vec)
-        return [I, t]
+        M, t1 = self.reflection.two_step_form()
+        t2 = Translation2D(t1.vec + self.translation.vec)
+        return [M, t2]
 
     @classmethod
     def from_two_step_form(cls, M, t):
-        assert is_identity(M), 'Expect first transform to be identity.'
+        """
+        M: First transform of two-steps. Orthogonal reflection or identity.
+        t: Second step. Translation or identity.
+
+        Make a glide reflection object from the result of composing
+        an orthogonal reflection followed by a translation.
+        """
+        if is_identity(M):
+            return t
+
+        assert isinstance(M, OrthoReflection2D), 'Expect first transform to be an orthogonal reflection.'
 
         if is_identity(t):
-            return Identity(2)
+            return M
 
         assert is_translation_2d(t), 'Expect second transform to be a translation.'
-        return Translation2D(t.vec)
+
+        # Origin.
+        O = ensure_vec([0, 0])
+
+        # Image of O under the transformation.
+        P = t.apply(M.apply(O))
+
+        if np.allclose(O, P):
+            # Origin is on the plane of reflection.
+            # Transform is orthogonal. Should not happen given checking t
+            # for identity above. But anyway ...
+            return M
+
+        if vecs_parallel(M.normal, P - O):
+            # The line joining O and P is perpendicular to the line of reflection.
+            # We have a 'normal' (non-glide) reflection.
+            return Reflection2D.from_two_step_form(M, t)
+
+        disp_vec = ensure_vec(P - O)
+        disp_value = M.direction.T @ disp_vec
+
+        # Point on reflection line.
+        Q = 0.5 * (O + P)
+
+        # Line of reflection.
+        line = Line2D(Q, M.direction)
+
+        return GlideReflection2D(line, disp_value)
 
     def __repr__(self):
-        v = self.vec.flatten().tolist()
-        return f'Translation2D({v})'
+        pass
 
     def __str__(self):
-        v = np.round(self.vec, 2).tolist()
-        return f'Translation2D({v})'
-
+        pass
 
 def compose_2d(transf_A: Transform2D, transf_B: Transform2D):
     """
@@ -779,3 +875,14 @@ def random_ortho_rotation_2d():
     ortho_rot = OrthoRotation2D(alpha)
     return ortho_rot
 
+
+def random_glide_reflection_2d():
+    # TODO
+    pass
+
+def random_transformation_2d():
+    # TODO
+    # Pick a random orthogonal transformation
+    # Add a random translation to get a two-step form.
+    # Convert to a single transformation with transf_2d_from_two_steps
+    pass
