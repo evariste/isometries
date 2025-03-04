@@ -2,7 +2,8 @@ import sys
 
 from isom.geom.transform_2d import (
     random_reflection_2d, random_rotation_2d, random_ortho_reflection_2d, random_ortho_rotation_2d, Transform2D,
-    flip_two_step_form_2D, compose_2d, transf_2d_from_two_step
+    flip_two_step_form_2D, compose_2d, transf_2d_from_two_step, random_glide_reflection_2d,
+    random_transformation_2d
 )
 from isom.geom.objects import Glyph2D
 
@@ -14,8 +15,23 @@ def main():
 
     run_tests_flip_two_step()
 
+    test_random_transfs()
+
     return 0
 
+def test_random_transfs(reps = 10):
+
+    for _ in range(reps):
+        t = random_transformation_2d()
+        print(t.__class__)
+
+        test_back_conversion(t)
+
+        test_flip_two_step(t)
+
+        test_two_step_form_equivalence(t)
+
+    return
 
 def test_back_conversion(transf: Transform2D):
     # M is orthogonal, t is a translation.
@@ -74,6 +90,9 @@ def run_tests_two_step_form_equivalence():
     rot = random_rotation_2d()
     test_two_step_form_equivalence(rot)
 
+    grefl = random_glide_reflection_2d()
+    test_two_step_form_equivalence(grefl)
+
     return
 
 
@@ -93,6 +112,9 @@ def run_tests_flip_two_step():
     rot = random_rotation_2d()
     test_flip_two_step(rot)
 
+    grefl = random_glide_reflection_2d()
+    test_flip_two_step(grefl)
+
     return
 
 
@@ -111,6 +133,9 @@ def run_tests_back_conversion():
 
     rot = random_rotation_2d()
     test_back_conversion(rot)
+
+    grefl = random_glide_reflection_2d()
+    test_back_conversion(grefl)
 
     return
 

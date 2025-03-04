@@ -6,6 +6,7 @@ import numpy as np
 
 from isom.utils.general import (
     ensure_unit_vec, ensure_vec, validate_pts, wrap_angle_minus_pi_to_pi, vecs_parallel, vecs_perpendicular,
+    ensure_scalar,
 )
 
 from isom.geom.objects import Line2D
@@ -554,11 +555,11 @@ class GlideReflection2D(Transform2D):
         """
         super().__init__()
 
-        self.displacement = displacement
+        self.displacement = ensure_scalar(displacement)
         self.line = line
 
         self.reflection = Reflection2D(self.line)
-        self.translation = Translation2D(self.displacement * self.direction)
+        self.translation = Translation2D(self.displacement * self.reflection.direction)
 
         return
 
@@ -626,10 +627,23 @@ class GlideReflection2D(Transform2D):
         return GlideReflection2D(line, disp_value)
 
     def __repr__(self):
-        pass
+        line_repr = repr(self.line)
+        disp = self.displacement
+        return f"""GlideReflection2D(
+{line_repr},
+{disp},
+)
+"""
 
     def __str__(self):
-        pass
+        line_repr = str(self.line)
+        disp = np.round(self.displacement, 2)
+        return f"""GlideReflection2D(
+{line_repr},
+{disp},
+)
+"""
+
 
 def compose_2d(transf_A: Transform2D, transf_B: Transform2D):
     """
@@ -877,12 +891,22 @@ def random_ortho_rotation_2d():
 
 
 def random_glide_reflection_2d():
-    # TODO
-    pass
+    refl = random_reflection_2d()
+    line = refl.line
+    displacement = np.random.rand() * 20.0 - 10.0
+    return GlideReflection2D(line, displacement)
+
+def random_ortho_transformation_2d():
+    val = np.random.rand()
+    if val < 0.5:
+        return random_ortho_reflection_2d()
+
+    return random_ortho_rotation_2d()
+
 
 def random_transformation_2d():
-    # TODO
-    # Pick a random orthogonal transformation
-    # Add a random translation to get a two-step form.
-    # Convert to a single transformation with transf_2d_from_two_steps
-    pass
+
+    M = random_ortho_transformation_2d()
+    vec = np.random.rand(2) * 20.0 - 10.0
+    t = Translation2D(vec)
+    return transf_2d_from_two_step(M, t)
