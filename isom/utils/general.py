@@ -118,6 +118,15 @@ def validate_pts(points_in):
 
     raise Exception('Invalid dimensions for points. Cannot validate.')
 
+def ensure_scalar(val):
+
+    if not isinstance(val, np.ndarray):
+        return val
+
+    if not (np.size(val) == 1):
+        raise Exception('Cannot convert multi-valued array to scalar.')
+
+    return np.ndarray.item(val)
 
 
 def ensure_vec(vec):
@@ -142,7 +151,7 @@ def ensure_unit_vec(vec):
 def ensure_vec_3d(vec: list, transpose=False):
     assert np.size(vec) == 3, 'Invalid dimension for 3D vector.'
 
-    v = vec.copy()
+    v = list(vec).copy()
 
     if isinstance(v, list):
         v = np.asarray(v)
@@ -165,7 +174,7 @@ def ensure_unit_vec_3d(vec):
 def ensure_vec_2d(vec: list, transpose=False):
     assert np.size(vec) == 2, 'Invalid dimension for 2D vector.'
 
-    v = vec.copy()
+    v = list(vec).copy()
 
     if isinstance(v, list):
         v = np.asarray(v)
@@ -242,8 +251,10 @@ def angle_from_three_points(vertex, first, second):
 
 
 def angle_between_vectors(v_first, v_second):
-    v0 = ensure_vec_3d(v_first)
-    v1 = ensure_vec_3d(v_second)
+    v0 = ensure_vec(v_first)
+    v1 = ensure_vec(v_second)
+
+    assert np.size(v0) == np.size(v1), 'Dimensions do not match.'
 
     norm0 = np.sqrt(np.sum(v0 * v0))
     norm1 = np.sqrt(np.sum(v1 * v1))
