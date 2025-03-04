@@ -429,12 +429,10 @@ class Line2D:
 )"""
 
     def __str__(self):
-        p = np.round(self.point, 2).tolist()
-        d = np.round(self.direction, 2).tolist()
-        return f"""Line2D(
-{p},
-{d},
-)"""
+        m = np.round(-1.0 * self.a / self.b, 2)
+        c = np.round(self.c / self.b)
+
+        return f'Line: y = {m} x + {c}'
 
 
 
