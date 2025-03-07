@@ -307,7 +307,7 @@ class OrthoImproperRotation3D(OrthoTransform3D):
     def __repr__(self):
         ax = self.axis.tolist()
         theta = self.angle
-        return f"""OrthoImproperRotation(
+        return f"""OrthoImproperRotation3D(
 {ax},
 {theta},
 )"""
@@ -315,7 +315,7 @@ class OrthoImproperRotation3D(OrthoTransform3D):
     def __str__(self):
         ax = np.round(self.axis, 2).tolist()
         theta = np.round(self.angle, 2)
-        return f"""OrthoImproperRotation(
+        return f"""OrthoImproperRotation3D(
 {ax},
 {theta},
 )"""
