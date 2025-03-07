@@ -429,12 +429,34 @@ class Line2D:
 )"""
 
     def __str__(self):
-        m = np.round(-1.0 * self.a / self.b, 2)
-        c = np.round(self.c / self.b)
 
-        return f'Line: y = {m} x + {c}'
+        if np.abs(self.b) > 0:
+            m = np.round(-1.0 * self.a / self.b, 2)
+            c = np.round(self.c / self.b)
 
+            if np.isclose(c, 0):
+                if np.isclose(m, 0):
+                    str_out = f'Line: y = 0'
+                else:
+                    str_out = f'Line: y = {m} x'
+            else:
+                if np.isclose(m, 0):
+                    str_out = f'Line: y = {c}'
+                else:
+                    str_out = f'Line: y = {m} x + {c}'
 
+            return str_out
+
+        assert np.abs(self.a) > 0, 'Both a and b are zero!'
+        # ax = c
+        c = np.round(self.c / self.a)
+
+        if np.isclose(c, 0):
+            str_out = f'Line: x = 0'
+        else:
+            str_out = f'Line: x = {c}'
+
+        return str_out
 
 class Icosahedron(object):
 
