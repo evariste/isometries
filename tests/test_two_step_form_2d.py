@@ -3,7 +3,7 @@ import sys
 from isom.geom.transform_2d import (
     random_reflection_2d, random_rotation_2d, random_ortho_reflection_2d, random_ortho_rotation_2d, Transform2D,
     flip_two_step_form_2D, compose_2d, transf_2d_from_two_step, random_glide_reflection_2d,
-    random_transformation_2d
+    random_transformation_2d, random_ortho_transformation_2d
 )
 from isom.geom.objects import Glyph2D
 
@@ -15,23 +15,12 @@ def main():
 
     run_tests_flip_two_step()
 
+    test_random_transfs(ortho=True)
+
     test_random_transfs()
 
     return 0
 
-def test_random_transfs(reps = 10):
-
-    for _ in range(reps):
-        t = random_transformation_2d()
-        print(t.__class__)
-
-        test_back_conversion(t)
-
-        test_flip_two_step(t)
-
-        test_two_step_form_equivalence(t)
-
-    return
 
 def test_back_conversion(transf: Transform2D):
     # M is orthogonal, t is a translation.
@@ -78,21 +67,12 @@ def run_tests_two_step_form_equivalence():
 
     print('Running tests for two-step equivalence.')
 
-    o_refl = random_ortho_reflection_2d()
-    test_two_step_form_equivalence(o_refl)
+    transfs = generate_random_transforms()
 
-    o_rot = random_ortho_rotation_2d()
-    test_two_step_form_equivalence(o_rot)
-
-    refl = random_reflection_2d()
-    test_two_step_form_equivalence(refl)
-
-    rot = random_rotation_2d()
-    test_two_step_form_equivalence(rot)
-
-    grefl = random_glide_reflection_2d()
-    test_two_step_form_equivalence(grefl)
-
+    for transf in transfs:
+        print(transf.__class__.__name__)
+        test_two_step_form_equivalence(transf)
+    print('-' * 80)
     return
 
 
@@ -100,44 +80,65 @@ def run_tests_flip_two_step():
 
     print('Running tests for flipping two-step form.')
 
-    o_refl = random_ortho_reflection_2d()
-    test_flip_two_step(o_refl)
+    transfs = generate_random_transforms()
 
-    o_rot = random_ortho_rotation_2d()
-    test_flip_two_step(o_rot)
-
-    refl = random_reflection_2d()
-    test_flip_two_step(refl)
-
-    rot = random_rotation_2d()
-    test_flip_two_step(rot)
-
-    grefl = random_glide_reflection_2d()
-    test_flip_two_step(grefl)
-
+    for transf in transfs:
+        print(transf.__class__.__name__)
+        test_flip_two_step(transf)
+    print('-' * 80)
     return
 
 
 def run_tests_back_conversion():
-
     print('Running tests for back conversion.')
 
-    o_refl = random_ortho_reflection_2d()
-    test_back_conversion(o_refl)
+    transfs = generate_random_transforms()
 
-    o_rot = random_ortho_rotation_2d()
-    test_back_conversion(o_rot)
+    for transf in transfs:
+        print(transf.__class__.__name__)
+        test_back_conversion(transf)
 
-    refl = random_reflection_2d()
-    test_back_conversion(refl)
-
-    rot = random_rotation_2d()
-    test_back_conversion(rot)
-
-    grefl = random_glide_reflection_2d()
-    test_back_conversion(grefl)
+    print('-' * 80)
 
     return
+
+def generate_random_transforms():
+
+    o_refl = random_ortho_reflection_2d()
+
+    o_rot = random_ortho_rotation_2d()
+
+    refl = random_reflection_2d()
+
+    rot = random_rotation_2d()
+
+    grefl = random_glide_reflection_2d()
+
+    return [o_refl, o_rot, refl, rot, grefl]
+
+
+def test_random_transfs(reps=10, ortho=False):
+    print(f'Running tests on {reps} random transformations.')
+
+    rand_func = random_transformation_2d
+    if ortho:
+        print('Restrict to orthogonal transformations.')
+        rand_func = random_ortho_transformation_2d
+
+    for _ in range(reps):
+        transf = rand_func()
+
+        print(transf.__class__.__name__)
+
+        test_back_conversion(transf)
+
+        test_flip_two_step(transf)
+
+        test_two_step_form_equivalence(transf)
+
+    print('-' * 80)
+    return
+
 
 
 if __name__ == '__main__':
