@@ -546,7 +546,6 @@ class Rotation2D(Transform2D):
 )"""
 
 class GlideReflection2D(Transform2D):
-    # TODO:
 
     def __init__(self, line: Line2D, displacement: float):
         """
