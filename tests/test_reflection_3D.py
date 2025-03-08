@@ -2,9 +2,13 @@ import sys
 
 import numpy as np
 
+from isom.geom.transform import is_identity
 from isom.utils.general import apply_hom_matrix_to_points
 from isom.geom.objects import Glyph3D
-from isom.geom.transform_3d import random_reflection_3d, random_ortho_reflection_3d
+from isom.geom.transform_3d import (
+    random_reflection_3d, random_ortho_reflection_3d,
+    compose_3d, OrthoRotation3D, Rotation3D
+)
 
 
 def main():
@@ -13,12 +17,43 @@ def main():
 
     test_self_inversion()
 
+    test_composition(ortho=True)
+
+    test_composition()
+
     print('Done.')
     
     return 0
 
+def test_composition(ortho=False):
+    print('Testing composition.')
+
+    rand_func = random_reflection_3d
+    target_class = Rotation3D
+    if ortho:
+        print('  -- Orthogonal transformations.')
+        rand_func = random_ortho_reflection_3d
+        target_class = OrthoRotation3D
+
+    refl_0 = rand_func()
+    refl_1 = rand_func()
+
+    transf = compose_3d(refl_0, refl_1)
+    assert isinstance(transf, target_class) or is_identity(transf), 'Unexpected type of result.'
+
+    R0 = refl_0.get_matrix()
+    R1 = refl_1.get_matrix()
+    T = transf.get_matrix()
+    assert np.allclose(R1 @ R0, T), 'Composition mismatch.'
+
+
+    R2 = rand_func()
+
+    return
 
 def test_self_inversion():
+
+    print('Test self-inversion')
 
     ortho_refl = random_ortho_reflection_3d()
 
@@ -39,6 +74,7 @@ def test_self_inversion():
     return
 
 def test_matrices():
+    print('Test matrices.')
 
     ortho_refl = random_ortho_reflection_3d()
 
