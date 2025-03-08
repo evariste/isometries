@@ -11,6 +11,7 @@ from isom.utils.general import (
 )
 from isom.geom.transform import Transform, Identity, is_identity
 from isom.geom.objects import Plane3D, Line3D
+from isom.utils.general import vector_pair_to_rotation_axis_angle
 
 
 class Transform3D(Transform, ABC):
@@ -63,6 +64,18 @@ class OrthoReflection3D(OrthoTransform3D):
         [OrthoTransform3D, Translation3D]
         """
         return [self.copy(), Identity(3)]
+
+    @classmethod
+    def from_reflections(cls, refl):
+        if is_identity(refl):
+            return Identity(3)
+        assert isinstance(refl, OrthoReflection3D), 'Expect a reflection.'
+        return refl.copy()
+
+    @classmethod
+    def from_planes(cls, plane):
+        assert isinstance(plane, Plane3D), 'Expect a plane.'
+        return cls(plane.normal)
 
     @classmethod
     def from_two_step_form(cls, M, t):
@@ -179,7 +192,7 @@ class OrthoRotation3D(OrthoTransform3D):
         n_0 = plane_0.normal
         n_1 = plane_1.normal
 
-        axis = cross_product(n_0, n_1)
+        axis = ensure_unit_vec(cross_product(n_0, n_1))
 
         theta = 2.0 * angle_between_vectors(n_0, n_1)
 
@@ -338,9 +351,9 @@ class OrthoImproperRotation3D(OrthoTransform3D):
             # Rotate (s_0, s_1)
             # A vector perpendicular to n01 and s2 plane.
             w = ensure_unit_vec(cross_product(n_2, n_01))
+
             # Rotate (s_0, s_1) about n_01 until s_1 aligns with w (i.e., perpendicular to s_2).
-            theta = angle_between_vectors(n_1, w)
-            axis = n_01
+            axis, theta = vector_pair_to_rotation_axis_angle(n_1, w)
 
             n_0_R = rotate_vector_3d(n_0, axis, theta)
             n_1_R = rotate_vector_3d(n_1, axis, theta)
@@ -365,9 +378,10 @@ class OrthoImproperRotation3D(OrthoTransform3D):
             # Rotate (s_1, s_2)
             # A vector perpendicular to n_12 and s0 plane.
             w = ensure_unit_vec(cross_product(n_0, n_12))
+
             # Rotate (s_1, s_2) about n_12 until s_2 aligns with w (so it is perpendicular to s_0).
-            theta = angle_between_vectors(n_2, w)
-            axis = n_12
+            axis, theta = vector_pair_to_rotation_axis_angle(n_2, w)
+
             n_1_R = rotate_vector_3d(n_1, axis, theta)
             n_2_R = rotate_vector_3d(n_2, axis, theta)
 
@@ -533,7 +547,14 @@ class Reflection3D(Transform3D):
         if is_identity(t):
             return M.copy()
 
-        # Both M and t are non-trivial.
+        plane_normal = M.plane.normal
+        t_vec = t.vec
+        if not vecs_parallel(plane_normal, t_vec):
+            # TODO:
+            return GlideReflection3D()
+
+        # Both M and t are non-trivial and translation vector
+        # is perpendicular to the plane of reflection of M.
         O = ensure_vec([0, 0, 0])
         P = t.apply(M.apply(O))
         # Point on the reflection plane.
@@ -634,14 +655,14 @@ class Rotation3D(Transform3D):
         if not vecs_perpendicular(M.axis, t.vec):
             return Twist3D.from_two_step_form(M, t)
 
-        # translation is perpendicular to the rotation axis.
+        # Translation is perpendicular to the rotation axis.
         t_dir = ensure_unit_vec(t.vec)
 
         # Let u be the translation vector for t.
         # Let theta be the angle for rotation M.
 
         # We want to find p such that p - p' = u
-        # where p' is the image of p under M and t : p' = t(M(p))
+        # where p' is the image of p under M and t, i.e., p' = t(M(p)).
 
         # Let A be the midpoint of p and p'.
         # O, p, p' make an isosceles triangle.
@@ -743,8 +764,8 @@ class ImproperRotation3D(Transform3D):
                 assert isinstance(t, Translation3D), 'Expect second transformation to be a Translation.'
                 return t.copy()
 
-        assert isinstance(M,
-                          OrthoImproperRotation3D), 'Expect orthogonal transformation to be an orthogonal improper rotation.'
+        msg = 'Expect orthogonal transformation to be an orthogonal improper rotation.'
+        assert isinstance(M, OrthoImproperRotation3D), msg
 
         if is_identity(t):
             return M.copy()
@@ -1030,7 +1051,9 @@ def compose_3d(transf_A: Transform3D, transf_B: Transform3D):
 
     t_out = Translation3D(v)
 
-    return transf_3d_from_two_step(M_out, t_out)
+    result = transf_3d_from_two_step(M_out, t_out)
+
+    return result
 
 
 
@@ -1182,6 +1205,13 @@ def random_improper_rotation_3d():
     return ImproperRotation3D(P, axis, alpha)
 
 
+def random_glide_reflection_3d():
+    # TODO:
+    pass
+
+def random_twist_3d():
+    # TODO:
+    pass
 
 def is_ortho_3d(transf: Transform3D):
     return isinstance(transf, OrthoTransform3D)
