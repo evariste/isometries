@@ -60,6 +60,32 @@ def rotate_vectors_3d(vecs, axis, theta):
 
     return pts_out
 
+def vector_pair_to_rotation_axis_angle(v_start, v_end):
+    """
+    Get the axis and angle for a rotation that takes the first
+    vector to the second one.
+    """
+
+    dir_start = ensure_unit_vec(v_start)
+    dir_end = ensure_unit_vec(v_end)
+
+    assert np.size(dir_start) == np.size(dir_end), 'Dimension mismatch.'
+    dim = np.size(dir_start)
+
+    if vecs_parallel(dir_start, dir_end):
+        axis = [1, 0]
+        if dim > 2:
+            axis.append(0)
+        axis = ensure_unit_vec(axis)
+        theta = 0.0
+        return axis, theta
+
+    axis = ensure_unit_vec(cross_product(dir_end, dir_start))
+
+    theta = angle_between_vectors(dir_start, dir_end)
+
+    return axis, theta
+
 
 
 def rotate_vector_3d(vec, axis, theta):
