@@ -86,6 +86,8 @@ def run_tests_two_step_form_equivalence():
     imp_rot = random_improper_rotation_3d()
     test_two_step_form_equivalence(imp_rot)
 
+    # TODO: glide reflection, twist
+
     return
 
 
@@ -99,11 +101,20 @@ def run_tests_flip_two_step():
     o_rot = random_ortho_rotation_3d()
     test_flip_two_step(o_rot)
 
+    o_imp_rot = random_ortho_improper_rotation_3d()
+    test_flip_two_step(o_imp_rot)
+
+
     refl = random_reflection_3d()
     test_flip_two_step(refl)
 
     rot = random_rotation_3d()
     test_flip_two_step(rot)
+
+    imp_rot = random_improper_rotation_3d()
+    test_flip_two_step(imp_rot)
+
+    # TODO: glide reflection, twist
 
     return
 
@@ -118,11 +129,20 @@ def run_tests_back_conversion():
     o_rot = random_ortho_rotation_3d()
     test_back_conversion(o_rot)
 
+    o_imp_rot = random_ortho_improper_rotation_3d()
+    test_back_conversion(o_imp_rot)
+
     refl = random_reflection_3d()
     test_back_conversion(refl)
 
     rot = random_rotation_3d()
     test_back_conversion(rot)
+
+    imp_rot = random_improper_rotation_3d()
+    test_back_conversion(imp_rot)
+
+
+    # TODO: glide reflection, twist
 
     return
 
