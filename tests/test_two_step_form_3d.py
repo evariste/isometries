@@ -68,25 +68,13 @@ def run_tests_two_step_form_equivalence():
 
     print('Running tests for two-step equivalence.')
 
-    o_refl = random_ortho_reflection_3d()
-    test_two_step_form_equivalence(o_refl)
+    transfs = get_random_transformations()
 
-    o_rot = random_ortho_rotation_3d()
-    test_two_step_form_equivalence(o_rot)
+    for transf in transfs:
+        print(transf.__class__.__name__)
+        test_two_step_form_equivalence(transf)
 
-    o_imp_rot = random_ortho_improper_rotation_3d()
-    test_two_step_form_equivalence(o_imp_rot)
-
-    refl = random_reflection_3d()
-    test_two_step_form_equivalence(refl)
-
-    rot = random_rotation_3d()
-    test_two_step_form_equivalence(rot)
-
-    imp_rot = random_improper_rotation_3d()
-    test_two_step_form_equivalence(imp_rot)
-
-    # TODO: glide reflection, twist
+    print('-' * 80)
 
     return
 
@@ -95,26 +83,13 @@ def run_tests_flip_two_step():
 
     print('Running tests for flipping two-step form.')
 
-    o_refl = random_ortho_reflection_3d()
-    test_flip_two_step(o_refl)
+    transfs = get_random_transformations()
 
-    o_rot = random_ortho_rotation_3d()
-    test_flip_two_step(o_rot)
+    for transf in transfs:
+        print(transf.__class__.__name__)
+        test_flip_two_step(transf)
 
-    o_imp_rot = random_ortho_improper_rotation_3d()
-    test_flip_two_step(o_imp_rot)
-
-
-    refl = random_reflection_3d()
-    test_flip_two_step(refl)
-
-    rot = random_rotation_3d()
-    test_flip_two_step(rot)
-
-    imp_rot = random_improper_rotation_3d()
-    test_flip_two_step(imp_rot)
-
-    # TODO: glide reflection, twist
+    print('-' * 80)
 
     return
 
@@ -123,28 +98,28 @@ def run_tests_back_conversion():
 
     print('Running tests for back conversion.')
 
-    o_refl = random_ortho_reflection_3d()
-    test_back_conversion(o_refl)
+    transfs = get_random_transformations()
 
-    o_rot = random_ortho_rotation_3d()
-    test_back_conversion(o_rot)
+    for transf in transfs:
+        print(transf.__class__.__name__)
+        test_back_conversion(transf)
 
-    o_imp_rot = random_ortho_improper_rotation_3d()
-    test_back_conversion(o_imp_rot)
-
-    refl = random_reflection_3d()
-    test_back_conversion(refl)
-
-    rot = random_rotation_3d()
-    test_back_conversion(rot)
-
-    imp_rot = random_improper_rotation_3d()
-    test_back_conversion(imp_rot)
-
-
-    # TODO: glide reflection, twist
+    print('-' * 80)
 
     return
+
+
+def get_random_transformations():
+
+    o_refl = random_ortho_reflection_3d()
+    o_rot = random_ortho_rotation_3d()
+    o_imp_rot = random_ortho_improper_rotation_3d()
+    refl = random_reflection_3d()
+    rot = random_rotation_3d()
+    imp_rot = random_improper_rotation_3d()
+    # TODO: glide reflection, twist
+    transfs = [o_refl, o_rot, o_imp_rot, refl, rot, imp_rot]
+    return transfs
 
 
 if __name__ == '__main__':
