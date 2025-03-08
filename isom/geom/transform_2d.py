@@ -814,9 +814,11 @@ def flip_two_step_form_2D(two_step_transf):
     I = Identity(2)
 
     if is_identity(t0):
+        # Put t1 at index 0
         return [t1, I]
 
     if is_identity(t1):
+        # Put t0 at index 1
         return [I, t0]
 
     # Neither t0, nor t1, are the identity.
