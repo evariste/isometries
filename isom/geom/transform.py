@@ -69,7 +69,7 @@ class Identity(Transform):
         return self.matrix
 
     def two_step_form(self):
-        return [Identity(2), Identity(2)]
+        return [self.copy(), self.copy()]
 
     @classmethod
     def from_two_step_form(cls, M, t):
