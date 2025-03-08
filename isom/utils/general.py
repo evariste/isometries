@@ -264,6 +264,12 @@ def angle_between_vectors(v_first, v_second):
 
     cosine = np.sum(v0 * v1) / norm0 / norm1
 
+    # Can get floating point errors if vectors are almost identical.
+    if cosine > 1.0:
+        cosine = 1.0
+    if cosine < -1.0:
+        cosine = -1.0
+
     theta = np.arccos(cosine)
 
     return theta
