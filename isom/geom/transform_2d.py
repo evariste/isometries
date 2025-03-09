@@ -18,6 +18,14 @@ class Transform2D(Transform, ABC):
     def copy(self):
         return eval(self.__repr__())
 
+    def inverse(self):
+        M, t = self.two_step_form()
+        t_inv = t.inverse()
+        M_inv = M.inverse()
+
+        N, s = flip_two_step_form_2D([t_inv, M_inv])
+        return self.from_two_step_form(N, s)
+
 
 class OrthoTransform2D(Transform2D, ABC):
 
@@ -27,11 +35,6 @@ class OrthoTransform2D(Transform2D, ABC):
         Return one or two reflections for the orthogonal transformation.
         """
 
-    @abstractmethod
-    def inverse(self):
-        """
-        Return the inverse.
-        """
 
 class OrthoReflection2D(OrthoTransform2D):
     """
@@ -215,6 +218,9 @@ class Translation2D(Transform2D):
         pts = validate_pts(points)
         return pts + self.vec
 
+    def inverse(self):
+        return Translation2D(-1.0 * self.vec)
+
     def get_matrix(self):
         T = np.eye(3)
         T[:2, -1] = np.squeeze(self.vec)
@@ -268,6 +274,7 @@ class Reflection2D(Transform2D):
         t = Translation2D(u)
         M = OrthoReflection2D(self.direction)
         return [M, t]
+
 
     @classmethod
     def from_two_step_form(cls, M, t):
@@ -666,6 +673,9 @@ def compose_2d(transf_A: Transform2D, transf_B: Transform2D):
     # We should have M_c == M_b
     assert M_b.matrix_equals(M_c), 'Unexpected change in orthogonal part after flip.'
 
+    # Sequence is:
+    # M_a M_b t_c t_b
+
     # Orthogonal part of result.
     M_out = compose_ortho_2d(M_a, M_b)
 
@@ -904,10 +914,43 @@ def random_ortho_transformation_2d():
 
     return random_ortho_rotation_2d()
 
-
-def random_transformation_2d():
-
-    M = random_ortho_transformation_2d()
+def random_translation_2d():
     vec = np.random.rand(2) * 20.0 - 10.0
     t = Translation2D(vec)
-    return transf_2d_from_two_step(M, t)
+    return t
+
+def random_transformation_2d(t_type=None):
+
+    if t_type is None:
+        M = random_ortho_transformation_2d()
+        vec = np.random.rand(2) * 20.0 - 10.0
+        t = Translation2D(vec)
+        return transf_2d_from_two_step(M, t)
+
+    type_names = [
+        'OrthoTransform2D',
+        'OrthoReflection2D',
+        'OrthoRotation2D',
+        'Translation2D',
+        'Reflection2D',
+        'Rotation2D',
+        'GlideReflection2D'
+    ]
+
+    assert t_type in type_names, 'Invalid type of transformation specified.'
+
+    funcs = [
+        random_ortho_transformation_2d,
+        random_ortho_reflection_2d,
+        random_ortho_rotation_2d,
+        random_translation_2d,
+        random_reflection_2d,
+        random_rotation_2d,
+        random_glide_reflection_2d
+    ]
+
+    k = type_names.index(t_type)
+
+    rand_func = funcs[k]
+    return rand_func()
+
