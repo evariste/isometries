@@ -316,16 +316,20 @@ class OrthoImproperRotation3D(OrthoTransform3D):
         axis_12 = plane_1.intersection(plane_2)
 
         if vecs_parallel(axis_01.direction, axis_12.direction):
-            # TODO: Test this.
             # All three planes intersect in a single line.
-            theta = angle_between_vectors(plane_1.normal, plane_2.normal)
-            axis = axis_01.direction
+
             n_0 = plane_0.normal
+            n_1 = plane_1.normal
+            n_2 = plane_2.normal
+
+            # The rotation that takes n_1 to n_2.
+            axis, theta = vector_pair_to_rotation_axis_angle(n_1, n_2)
+
+            # Apply this to n_0
             n_0_R = rotate_vector_3d(n_0, axis, theta)
             # The rotated version of plane 1 will coincide with plane 2.
             # So r_1 and r_2 will cancel.
-            plane_0_R = Plane3D(n_0_R, [0, 0, 0])
-            return OrthoReflection3D(plane_0_R)
+            return OrthoReflection3D(n_0_R)
 
 
 
