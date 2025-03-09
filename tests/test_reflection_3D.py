@@ -3,11 +3,14 @@ import sys
 import numpy as np
 
 from isom.geom.transform import is_identity
-from isom.utils.general import apply_hom_matrix_to_points
+from isom.utils.general import apply_hom_matrix_to_points, rotate_vector_3d
 from isom.geom.objects import Glyph3D
 from isom.geom.transform_3d import (
     random_reflection_3d, random_ortho_reflection_3d,
-    compose_3d, OrthoRotation3D, Rotation3D
+    compose_3d,
+    OrthoReflection3D,
+    OrthoRotation3D, Rotation3D,
+    OrthoImproperRotation3D, ImproperRotation3D,
 )
 
 
@@ -20,6 +23,8 @@ def main():
     test_composition(ortho=True)
 
     test_composition()
+
+    test_composition_3()
 
     print('Done.')
     
@@ -46,10 +51,61 @@ def test_composition(ortho=False):
     T = transf.get_matrix()
     assert np.allclose(R1 @ R0, T), 'Composition mismatch.'
 
+    return
 
-    R2 = rand_func()
+
+def test_composition_3():
+    print('Testing composition of three reflections.')
+
+    # Three reflections in planes through the origin.
+
+    refl_0 = random_ortho_reflection_3d()
+    refl_1 = random_ortho_reflection_3d()
+    refl_2 = random_ortho_reflection_3d()
+
+    transf = OrthoImproperRotation3D.from_reflections(refl_0, refl_1, refl_2)
+
+    assert isinstance(transf, OrthoImproperRotation3D), 'Unexpected type of transformation.'
+
+    R0 = refl_0.get_matrix()
+    R1 = refl_1.get_matrix()
+    R2 = refl_2.get_matrix()
+
+    T = transf.get_matrix()
+
+    assert np.allclose(R2 @ R1 @ R0, T), 'Composition mismatch.'
+
+
+
+    # Three reflections with planes that intersect in a single line.
+
+    refl_0 = random_ortho_reflection_3d()
+    refl_1 = random_ortho_reflection_3d()
+
+    axis = refl_0.plane.intersection(refl_1.plane)
+
+    alpha = (np.random.rand() * 2.0 - 1) * np.pi
+
+    normal = rotate_vector_3d(refl_1.normal, axis.direction, alpha)
+
+    refl_2 = OrthoReflection3D(normal)
+
+    transf = OrthoImproperRotation3D.from_reflections(refl_0, refl_1, refl_2)
+
+    assert isinstance(transf, OrthoReflection3D), 'Unexpected type of transformation.'
+
+    R0 = refl_0.get_matrix()
+    R1 = refl_1.get_matrix()
+    R2 = refl_2.get_matrix()
+
+    T = transf.get_matrix()
+
+    assert np.allclose(R2 @ R1 @ R0, T), 'Composition mismatch.'
+
 
     return
+
+
 
 def test_self_inversion():
 
