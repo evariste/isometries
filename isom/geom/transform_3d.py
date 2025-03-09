@@ -22,6 +22,14 @@ class Transform3D(Transform, ABC):
     def copy(self):
         return eval(self.__repr__())
 
+    def inverse(self):
+        M, t = self.two_step_form()
+        t_inv = t.inverse()
+        M_inv = M.inverse()
+
+        N, s = flip_two_step_form_3D([t_inv, M_inv])
+        return self.from_two_step_form(N, s)
+
 
 class OrthoTransform3D(Transform3D, ABC):
     """
@@ -34,11 +42,6 @@ class OrthoTransform3D(Transform3D, ABC):
         Return between one and three reflections for the orthogonal transformation.
         """
 
-    @abstractmethod
-    def inverse(self):
-        """
-        Return the inverse.
-        """
 
 
 class OrthoReflection3D(OrthoTransform3D):
@@ -436,9 +439,7 @@ class OrthoImproperRotation3D(OrthoTransform3D):
         return [R0, R1, R2]
 
     def inverse(self):
-        R0, R1, R2 = self.get_reflections()
-        rev_refls = [R2, R1, R0]
-        return OrthoImproperRotation3D.from_reflections(*rev_refls)
+        return OrthoImproperRotation3D(self.axis, -1.0 * self.angle)
 
 
     def __repr__(self):
