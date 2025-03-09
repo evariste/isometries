@@ -3,6 +3,7 @@ from __future__ import annotations
 from isom.geom.transform import Transform, Identity, is_identity
 from abc import ABC, abstractmethod
 import numpy as np
+from random import shuffle
 
 from isom.utils.general import (
     ensure_unit_vec, ensure_vec, validate_pts, wrap_angle_minus_pi_to_pi, vecs_parallel, vecs_perpendicular,
@@ -13,18 +14,17 @@ from isom.geom.objects import Line2D
 from typing import List
 
 
+
 class Transform2D(Transform, ABC):
 
     def copy(self):
         return eval(self.__repr__())
 
+    @abstractmethod
     def inverse(self):
-        M, t = self.two_step_form()
-        t_inv = t.inverse()
-        M_inv = M.inverse()
-
-        N, s = flip_two_step_form_2D([t_inv, M_inv])
-        return self.from_two_step_form(N, s)
+        """
+        Get the inverse.
+        """
 
 
 class OrthoTransform2D(Transform2D, ABC):
@@ -267,6 +267,9 @@ class Reflection2D(Transform2D):
 
         return
 
+    def inverse(self):
+        return self.copy()
+
     def two_step_form(self):
         pt2 = self.ortho_reflection.apply(self.pt)
         u = self.pt - pt2
@@ -379,6 +382,9 @@ class Rotation2D(Transform2D):
         self.ortho_rotation = OrthoRotation2D(self.angle)
 
         return
+
+    def inverse(self):
+        return Rotation2D(self.centre, -1.0 * self.angle)
 
     def two_step_form(self):
         centre_rot = self.ortho_rotation.apply(self.centre)
@@ -568,6 +574,9 @@ class GlideReflection2D(Transform2D):
         self.translation = Translation2D(self.displacement * self.reflection.direction)
 
         return
+
+    def inverse(self):
+        return GlideReflection2D(self.line, -1.0 * self.displacement)
 
     def apply(self, points):
         pts = validate_pts(points)
@@ -922,35 +931,41 @@ def random_translation_2d():
 def random_transformation_2d(t_type=None):
 
     if t_type is None:
-        M = random_ortho_transformation_2d()
-        vec = np.random.rand(2) * 20.0 - 10.0
-        t = Translation2D(vec)
-        return transf_2d_from_two_step(M, t)
+        t_types = TRANSF_TYPES_2D.copy()
+        # Remove abstract types
+        abstract_types = ['Transform2D', 'OrthoTransform2D']
+        t_types = list(set(t_types).difference(abstract_types))
 
-    type_names = [
-        'OrthoTransform2D',
-        'OrthoReflection2D',
-        'OrthoRotation2D',
-        'Translation2D',
-        'Reflection2D',
-        'Rotation2D',
-        'GlideReflection2D'
-    ]
+        shuffle(t_types)
+        t_type = t_types[0]
 
-    assert t_type in type_names, 'Invalid type of transformation specified.'
+        return random_transformation_2d(t_type=t_type)
 
-    funcs = [
-        random_ortho_transformation_2d,
-        random_ortho_reflection_2d,
-        random_ortho_rotation_2d,
-        random_translation_2d,
-        random_reflection_2d,
-        random_rotation_2d,
-        random_glide_reflection_2d
-    ]
+    assert t_type in TRANSF_TYPES_2D, 'Invalid type of transformation specified.'
 
-    k = type_names.index(t_type)
+    k = TRANSF_TYPES_2D.index(t_type)
 
-    rand_func = funcs[k]
+    rand_func = RAND_TRANS_FUNCS_2D[k]
     return rand_func()
 
+
+TRANSF_TYPES_2D = [
+    'Transform2D'
+    'OrthoTransform2D',
+    'OrthoReflection2D',
+    'OrthoRotation2D',
+    'Translation2D',
+    'Reflection2D',
+    'Rotation2D',
+    'GlideReflection2D'
+]
+RAND_TRANS_FUNCS_2D = [
+    random_transformation_2d,
+    random_ortho_transformation_2d,
+    random_ortho_reflection_2d,
+    random_ortho_rotation_2d,
+    random_translation_2d,
+    random_reflection_2d,
+    random_rotation_2d,
+    random_glide_reflection_2d
+]

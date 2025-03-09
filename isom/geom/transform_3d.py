@@ -4,6 +4,7 @@ import numpy as np
 from quaternion import quaternion
 from abc import ABC, abstractmethod
 from typing import List
+from random import shuffle
 
 from isom.utils.general import (
     ensure_unit_vec, ensure_vec, validate_pts, wrap_angle_minus_pi_to_pi, rotate_vector_3d, cross_product,
@@ -22,13 +23,11 @@ class Transform3D(Transform, ABC):
     def copy(self):
         return eval(self.__repr__())
 
+    @abstractmethod
     def inverse(self):
-        M, t = self.two_step_form()
-        t_inv = t.inverse()
-        M_inv = M.inverse()
-
-        N, s = flip_two_step_form_3D([t_inv, M_inv])
-        return self.from_two_step_form(N, s)
+        """
+        Get the inverse.
+        """
 
 
 class OrthoTransform3D(Transform3D, ABC):
@@ -480,6 +479,9 @@ class Translation3D(Transform3D):
         """
         return [Identity(3), self.copy()]
 
+    def inverse(self):
+        return Translation3D(-1.0 * self.vec)
+
     @classmethod
     def from_two_step_form(cls, M, t):
         assert is_identity(M), 'Expect identity for orthogonal transformation.'
@@ -537,6 +539,9 @@ class Reflection3D(Transform3D):
         M = self.ortho_reflection.copy()
         return [M, t_v]
 
+    def inverse(self):
+        return self.copy()
+
     @classmethod
     def from_two_step_form(cls, M, t):
 
@@ -555,8 +560,15 @@ class Reflection3D(Transform3D):
         plane_normal = M.plane.normal
         t_vec = t.vec
         if not vecs_parallel(plane_normal, t_vec):
-            # TODO:
-            return GlideReflection3D()
+            # Components of translation perpendicular and parallel to the plane.
+            t_perp = (plane_normal.T @ t_vec) * plane_normal
+
+            t_para = t_vec - t_perp
+            translation_perp = Translation3D(t_perp)
+            reflection = Reflection3D.from_two_step_form(M, translation_perp)
+            plane_adjusted = reflection.plane
+
+            return GlideReflection3D(plane_adjusted, t_para)
 
         # Both M and t are non-trivial and translation vector
         # is perpendicular to the plane of reflection of M.
@@ -581,11 +593,11 @@ class Reflection3D(Transform3D):
 
     def __repr__(self):
         plane_repr = repr(self.plane)
-        return f'Reflection3D(\n{plane_repr}\n))'
+        return f'Reflection3D(\n{plane_repr}\n)'
 
     def __str__(self):
         plane_str = str(self.plane)
-        return f'Reflection3D(\n{plane_str}\n))'
+        return f'Reflection3D(\n{plane_str}\n)'
 
 
 class Rotation3D(Transform3D):
@@ -639,6 +651,11 @@ class Rotation3D(Transform3D):
         t_v = Translation3D(v)
         M = self.ortho_rot.copy()
         return [M, t_v]
+
+    def inverse(self):
+        axis = self.ortho_rot.axis
+        theta = -1.0 * self.ortho_rot.angle
+        return Rotation3D(self.point, axis, theta)
 
     @classmethod
     def from_two_step_form(cls, M, t):
@@ -748,6 +765,12 @@ class ImproperRotation3D(Transform3D):
 
         return
 
+    def inverse(self):
+        p = self.point
+        axis = self.axis
+        theta = -1.0 * self.angle
+        return ImproperRotation3D(p, axis, theta)
+
     def two_step_form(self):
         """
         [OrthoTransform3D, Translation3D]
@@ -855,29 +878,92 @@ class GlideReflection3D(Transform3D):
     parallel to the plane of reflection.
     """
 
-    def __init__(self):
+    def __init__(
+            self,
+            plane: Plane3D,
+            vec,
+    ):
         super().__init__()
+        normal = plane.normal
+        v = ensure_vec(vec)
+        # Component of v perpendicular to the plane
+        v_perp = (normal.T @ v) * normal
+        # Component of v parallel to the plane
+        v_para = v - v_perp
+
+        len_para_sq = np.sum(v_para * v_para)
+        len_perp_sq = np.sum(v_perp * v_perp)
+        assert len_para_sq > 0, 'Translation has no part parallel to the reflection plane.'
+        assert np.isclose(len_perp_sq, 0), 'Translation has component perpendicular to plane.'
+
+        self.reflection = Reflection3D(plane)
+        self.translation = Translation3D(vec)
 
         return
 
     def apply(self, points):
-        pass
+        pts = validate_pts(points)
+        pts = self.reflection.apply(pts)
+        pts = self.translation.apply(pts)
+        return pts
+
 
     def get_matrix(self):
-        pass
+        M = self.reflection.get_matrix()
+        N = self.translation.get_matrix()
+        return N @ M
+
 
     def two_step_form(self):
-        pass
+        M, t = self.reflection.two_step_form()
+        v0 = t.vec
+        v1 = self.translation.vec
+
+        t_out = Translation3D(v0 + v1)
+        return [M, t_out]
+
+    def inverse(self):
+        return GlideReflection3D(
+            self.reflection.plane,
+            -1.0 * self.translation.vec
+        )
 
     @classmethod
     def from_two_step_form(cls, M, t):
-        pass
+
+        if is_identity(M):
+            if is_identity(t):
+                return Identity(3)
+            else:
+                assert isinstance(t, Translation3D), 'Expect second transformation to be a Translation.'
+                return t.copy()
+
+        msg = 'Expect orthogonal transformation to be an orthogonal reflection.'
+        assert isinstance(M, OrthoReflection3D), msg
+
+        if is_identity(t):
+            return M.copy()
+
+        return cls(M.plane, t.vec)
+
 
     def __repr__(self):
-        pass
+        plane = repr(self.reflection.plane)
+        v = self.translation.vec.tolist()
+        return f"""GlideReflection3D(
+{plane},
+{v},
+)
+"""
 
     def __str__(self):
-        pass
+        plane = str(self.reflection.plane)
+        v = np.round(self.translation.vec, 2).tolist()
+        return f"""GlideReflection3D(
+{plane},
+{v},
+)
+"""
 
 
 class Twist3D(Transform3D):
@@ -886,30 +972,89 @@ class Twist3D(Transform3D):
     parallel to the axis of rotation.
     """
 
-    def __init__(self):
+    def __init__(
+            self,
+            rot: Rotation3D,
+            displacement: float,
+    ):
+        """
+        displacement can be positive or negative.
+        Indicates signed distance along the axis of the rotation
+        """
         super().__init__()
-
+        self.rotation = rot
+        self.displacement = displacement
+        v = displacement * rot.ortho_rot.axis
+        self.translation = Translation3D(v)
         return
 
+    def inverse(self):
+        rot = self.rotation.inverse()
+        displacement = -1.0 * self.displacement
+        return Twist3D(rot, displacement)
+
     def apply(self, points):
-        pass
+        pts = validate_pts(points)
+        pts = self.rotation.apply(pts)
+        pts = self.translation.apply(pts)
+        return pts
+
 
     def get_matrix(self):
-        pass
+        M = self.rotation.get_matrix()
+        N = self.translation.get_matrix()
+        return N @ M
 
     def two_step_form(self):
-        pass
+        M, t = self.rotation.two_step_form()
+        v0 = t.vec
+        v1 = self.translation.vec
+        t_out = Translation3D(v0 + v1)
+        return [M, t_out]
 
     @classmethod
     def from_two_step_form(cls, M, t):
-        pass
+        if is_identity(M):
+            if is_identity(t):
+                return Identity(3)
+            else:
+                assert isinstance(t, Translation3D), 'Expect second transformation to be a Translation.'
+                return t.copy()
+
+        msg = 'Expect orthogonal transformation to be an orthogonal rotation.'
+        assert isinstance(M, OrthoRotation3D), msg
+
+        if is_identity(t):
+            return M.copy()
+
+        v = t.vec
+        axis = M.axis
+        # Components of v parallel and perpendicular to rotation axis.
+        displacement = axis.T @ v
+        v_para = displacement * axis
+        v_perp = v - v_para
+
+        t_rot = Translation3D(v_perp)
+        rot = Rotation3D.from_two_step_form(M, t_rot)
+
+        return cls(rot, displacement)
+
 
     def __repr__(self):
-        pass
+        rot = repr(self.rotation)
+        d = self.displacement
+        return f"""Twist3D(
+{rot},
+{d},
+)"""
 
     def __str__(self):
-        pass
-
+        rot = str(self.rotation)
+        d = np.round(self.displacement, 2)
+        return f"""Twist3D(
+{rot},
+{d},
+)"""
 
 def frame_orthonormal(uvw):
     """
@@ -1204,22 +1349,96 @@ def random_ortho_improper_rotation_3d():
 
 def random_improper_rotation_3d():
     # Random 3D improper rotation.
-    P = np.random.rand(3) * 10
+    P = np.random.rand(3) * 20.0 - 10.0
     axis = np.random.rand(3) - [0.5, 0.5, 0.5]
     alpha = np.random.rand() * 2.0 * np.pi
     return ImproperRotation3D(P, axis, alpha)
 
 
+def random_translation_3d():
+    v = np.random.rand(3) * 20.0 - 10.0
+    return Translation3D(v)
+
 def random_glide_reflection_3d():
-    # TODO:
-    pass
+    refl = random_reflection_3d()
+    plane = refl.plane
+
+    n = plane.normal
+
+    v = np.random.rand(3) * 20.0 - 10.0
+    v = ensure_vec(v)
+
+    v_perp = (n.T @ v) * n
+    v_para = v - v_perp
+
+    return GlideReflection3D(plane, v_para)
 
 def random_twist_3d():
-    # TODO:
-    pass
+    rot = random_rotation_3d()
+    displacement = np.random.rand() * 20.0 - 10.0
+    return Twist3D(rot, displacement)
+
+
+def random_ortho_transformation_3d():
+    val = np.random.rand() * 3.0
+    if val < 1.0:
+        return random_ortho_reflection_3d()
+    if val < 2.0:
+        return random_ortho_rotation_3d()
+
+    return random_ortho_improper_rotation_3d()
+
+
+def random_transformation_3d(t_type=None):
+    if t_type is None:
+        t_types = TRANSF_TYPES_3D.copy()
+        # Remove abstract types
+        abstract_types = ['Transform3D', 'OrthoTransform3D']
+        t_types = list(set(t_types).difference(abstract_types))
+
+        shuffle(t_types)
+        t_type = t_types[0]
+        return random_transformation_3d(t_type=t_type)
+
+    assert t_type in TRANSF_TYPES_3D, 'Invalid type of transformation specified.'
+
+    k = TRANSF_TYPES_3D.index(t_type)
+
+    rand_func = RAND_TRANS_FUNCS_3D[k]
+    return rand_func()
+
 
 def is_ortho_3d(transf: Transform3D):
     return isinstance(transf, OrthoTransform3D)
 
 def is_translation_3d(transf: Transform3D):
     return isinstance(transf, Translation3D)
+
+
+TRANSF_TYPES_3D = [
+    'Transform3D',
+    'OrthoTransform3D',
+    'OrthoReflection3D',
+    'OrthoRotation3D',
+    'OrthoImproperRotation3D',
+    'Translation3D',
+    'Reflection3D',
+    'Rotation3D',
+    'ImproperRotation3D',
+    'GlideReflection3D',
+    'Twist3D',
+]
+
+RAND_TRANS_FUNCS_3D = [
+    random_transformation_3d,
+    random_ortho_transformation_3d,
+    random_ortho_reflection_3d,
+    random_ortho_rotation_3d,
+    random_ortho_improper_rotation_3d,
+    random_translation_3d,
+    random_reflection_3d,
+    random_rotation_3d,
+    random_improper_rotation_3d,
+    random_glide_reflection_3d,
+    random_twist_3d
+]
