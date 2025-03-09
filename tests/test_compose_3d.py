@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+import os
 import numpy as np
 
 """
@@ -14,6 +14,8 @@ from isom.geom.transform_3d import random_transformation_3d, compose_3d, TRANSF_
 from isom.geom.transform import is_identity
 
 def main():
+    print('*' * 80)
+    print(f'Running test {os.path.basename(__file__)}')
 
     test_inverses()
 

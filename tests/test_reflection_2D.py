@@ -1,11 +1,13 @@
 import sys
 import numpy as np
-
+import os
 from isom.geom.objects import Glyph2D
-from isom.geom.transform_2d import random_reflection_2d, random_ortho_reflection_2d
+from isom.geom.transform_2d import random_reflection_2d, random_ortho_reflection_2d, compose_2d
 from isom.utils.general import apply_hom_matrix_to_points
 
 def main():
+    print('*' * 80)
+    print(f'Running test {os.path.basename(__file__)}')
 
     test_apply_reflection()
 
@@ -57,7 +59,7 @@ def test_composition():
     glyph = Glyph2D()
 
     # Composition
-    transf_comp = refl_1.followed_by(refl_2)
+    transf_comp = compose_2d(refl_1, refl_2)
     glyph_comp = glyph.apply_transformation(transf_comp)
 
     M = refl_1.get_matrix()

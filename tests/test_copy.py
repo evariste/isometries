@@ -1,4 +1,5 @@
 import sys
+import os
 import numpy as np
 from isom.geom.transform import Identity, transforms_equal
 from isom.geom.transform_2d import OrthoReflection2D, OrthoRotation2D, Reflection2D, Rotation2D, Translation2D
@@ -7,6 +8,8 @@ from isom.geom.objects import Line2D
 # TODO: 3D transforms.
 
 def main():
+    print('*' * 80)
+    print(f'Running test {os.path.basename(__file__)}')
 
     test_copy_2D()
 

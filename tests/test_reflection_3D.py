@@ -1,5 +1,5 @@
 import sys
-
+import os
 import numpy as np
 
 from isom.geom.transform import is_identity
@@ -15,6 +15,8 @@ from isom.geom.transform_3d import (
 
 
 def main():
+    print('*' * 80)
+    print(f'Running test {os.path.basename(__file__)}')
 
     test_matrices()
 

@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+import os
 import sys
 
 from isom.geom.objects import Glyph3D
@@ -13,6 +13,8 @@ compose_3d,
 )
 
 def main():
+    print('*' * 80)
+    print(f'Running test {os.path.basename(__file__)}')
 
     run_tests_two_step_form_equivalence()
 

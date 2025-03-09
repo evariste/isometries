@@ -1,5 +1,5 @@
 import sys
-
+import os
 from isom.geom.transform_2d import (
     random_reflection_2d, random_rotation_2d, random_ortho_reflection_2d, random_ortho_rotation_2d, Transform2D,
     flip_two_step_form_2D, compose_2d, transf_2d_from_two_step, random_glide_reflection_2d,
@@ -8,6 +8,8 @@ from isom.geom.transform_2d import (
 from isom.geom.objects import Glyph2D
 
 def main():
+    print('*' * 80)
+    print(f'Running test {os.path.basename(__file__)}')
 
     run_tests_two_step_form_equivalence()
 

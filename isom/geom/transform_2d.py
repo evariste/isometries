@@ -78,11 +78,6 @@ class OrthoReflection2D(OrthoTransform2D):
 
         return M
 
-    def followed_by(self, other: OrthoReflection2D):
-        line_1 = Line2D((0, 0), self.direction)
-        line_2 = Line2D((0, 0), other.direction)
-        return OrthoRotation2D.from_lines(line_1, line_2)
-
     def two_step_form(self):
         M = OrthoReflection2D(self.direction)
         I = Identity(2)
@@ -342,11 +337,6 @@ class Reflection2D(Transform2D):
 
         return points_out
 
-    def followed_by(self, other: Reflection2D):
-        line_1 = self.line
-        line_2 = other.line
-        return Rotation2D.from_lines(line_1, line_2)
-
 
     def get_matrix(self, ):
 
@@ -504,36 +494,6 @@ class Rotation2D(Transform2D):
         pts = pts + self.centre
 
         return pts
-
-    def followed_by(self, other):
-        A = self.centre
-        B = other.centre
-        theta = self.angle
-        phi = other.angle
-        if np.allclose(A, B):
-            result = Rotation2D(A, theta + phi)
-            return result
-
-        # A and B are distinct.
-        m = Line2D(A, B - A)
-        m_dir = np.squeeze(m.direction)
-        m_ang = np.arctan2(m_dir[1], m_dir[0])
-
-        l_ang = m_ang - theta / 2.0
-        l_dir = [np.cos(l_ang), np.sin(l_ang)]
-        l = Line2D(A, l_dir)
-
-        n_ang = m_ang + phi / 2.0
-        n_dir = [np.cos(n_ang), np.sin(n_ang)]
-        n = Line2D(B, n_dir)
-
-        return Rotation2D.from_lines(l, n)
-
-    def __matmul__(self, other):
-        """
-        Overload @ operator.
-        """
-        return self.followed_by(other)
 
 
     def get_matrix(self):

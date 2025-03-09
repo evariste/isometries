@@ -206,32 +206,6 @@ class OrthoRotation3D(OrthoTransform3D):
         plane_1 = refl_1.plane
         return OrthoRotation3D.from_planes(plane_0, plane_1)
 
-    def followed_by(self, other: OrthoRotation3D):
-        """
-        Compose with another orthogonal rotation using geometric objects.
-        """
-
-        if vecs_parallel(self.axis, other.axis):
-            if np.allclose(self.axis, other.axis):
-                return OrthoRotation3D(self.axis, self.angle + other.angle)
-            else:
-                # Axes are opposing each other.
-                return OrthoRotation3D(self.axis, self.angle - other.angle)
-
-        O = ensure_vec([0, 0, 0])
-        P = 10 * self.axis
-        Q = 10 * other.axis
-        plane_shared = Plane3D.from_points(O, P, Q)
-        n_shared = plane_shared.normal
-
-        n_0 = rotate_vector_3d(n_shared, self.axis, -0.5 * self.angle)
-
-        n_1 = rotate_vector_3d(n_shared, other.axis, 0.5 * other.angle)
-
-        plane_0 = Plane3D(n_0, O)
-        plane_1 = Plane3D(n_1, O)
-
-        return OrthoRotation3D.from_planes(plane_0, plane_1)
 
     def get_matrix(self):
         """
@@ -624,21 +598,6 @@ class Rotation3D(Transform3D):
 
         return
 
-    def followed_by(self, other: Rotation3D):
-        # TODO:
-        pass
-        # L = self.ortho_rot
-        # K = other.ortho_rot
-        # M = L.followed_by(K)
-        #
-        # p = self.point
-        # r = other.point
-        # u = r - K.apply(r - p) - M.apply(p)
-        # trans = Translation3D(u)
-        #
-        # trans_orig_rot = TransOriginRotation3D.from_transforms(M, trans)
-        #
-        # return trans_orig_rot.to_trans_rot()
 
     def two_step_form(self):
         """

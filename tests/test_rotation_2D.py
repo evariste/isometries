@@ -1,4 +1,4 @@
-
+import os
 import sys
 import numpy as np
 
@@ -10,6 +10,8 @@ from isom.geom.objects import Glyph2D
 from isom.utils.general import apply_hom_matrix_to_points, apply_transform_sequence_to_glyph
 
 def main():
+    print('*' * 80)
+    print(f'Running test {os.path.basename(__file__)}')
 
     test_rotation()
 
