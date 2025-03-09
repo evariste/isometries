@@ -1,7 +1,5 @@
 """
-
 Compose three reflections in non-concurrent lines to get a glide reflection.
-
 """
 import sys
 import numpy as np

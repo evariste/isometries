@@ -1,3 +1,7 @@
+"""
+Visualise a random reflection in 2D.
+"""
+
 import sys
 from matplotlib import pyplot as plt
 from isom.geom.objects import Glyph2D
