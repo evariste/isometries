@@ -80,9 +80,15 @@ def vector_pair_to_rotation_axis_angle(v_start, v_end):
         theta = 0.0
         return axis, theta
 
-    axis = ensure_unit_vec(cross_product(dir_end, dir_start))
+    v = cross_product(dir_start, dir_end)
+    # Magnitude of cross product.
+    sin_theta =  np.sqrt(np.sum(v * v))
+    # Dot product
+    cos_theta = np.sum(dir_start * dir_end)
 
-    theta = angle_between_vectors(dir_start, dir_end)
+    axis = ensure_unit_vec(v)
+
+    theta = np.arctan2(sin_theta, cos_theta)
 
     return axis, theta
 
