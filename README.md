@@ -1,19 +1,27 @@
-## A library for working with isometries and orthogonal transforms.
+## A Python library for working with isometries and orthogonal transforms.
 
-Starting with a question on the composition of two rotations (in 2-D and 3-D),
-this code was developed to represent isometries and orthogonal transformations.
+The code in this repository started from trying to tackle 
+a  [question on the composition of two rotations](https://math.stackexchange.com/q/4999941/435819) 
+(in 2-D and 3-D).
+The code has been developed to represent isometries and orthogonal transformations
+when solving problems involving rotations, reflections, etc., in 2-D and 3-D.
 
-The emphasis is on using direct geometric methods (rather than, say, matrices)
-to model rotations, etc.
+The emphasis is on using _direct geometric methods_
+to model rotations, etc., 
 
+Using matrices is an alternative way of modelling isometries
+and these are used partially, mainly for tasks such as checking
+that two isometries are 'equal'. Modelling orthogonal
+rotations with quaternions is done only briefly as an exercise.
 
-
-# TODO: Expand this.
+See the folders `examples` and `tests` for illustrations on 
+the classes that are used to model orthogonal transformations
+and isometries.
 
 
 ## Installation
 
-Tested using python 3.12.
+The code has been tested using python 3.12.
 
 Make an environment:
 
@@ -38,3 +46,4 @@ Install this library:
 or, for development mode:
 
     python -m pip install -e .
+
