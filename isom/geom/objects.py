@@ -59,6 +59,9 @@ class Line3D(object):
     def set_direction(self, v):
         self.direction = ensure_unit_vec(v)
 
+    def copy(self):
+        return Line3D(self.point, self.direction)
+
     def __repr__(self):
         return f"""Line3D(
 {self.point.tolist()},
@@ -156,6 +159,9 @@ class Plane3D:
         intersection = Line3D(pt_inter, direction)
 
         return intersection
+
+    def copy(self):
+        return Plane3D(self.normal, self.point)
 
     def __repr__(self):
         return f"""Plane3D(
@@ -421,6 +427,9 @@ class Line2D:
         pt = self.intersection(line_other)
 
         return pt
+
+    def copy(self):
+        return Line2D(self.point, self.direction)
 
     def __repr__(self):
         return f"""Line2D(
