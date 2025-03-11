@@ -17,9 +17,6 @@ from typing import List
 
 class Transform2D(Transform, ABC):
 
-    def copy(self):
-        return eval(self.__repr__())
-
     @abstractmethod
     def inverse(self):
         """
@@ -97,6 +94,9 @@ class OrthoReflection2D(OrthoTransform2D):
     def get_reflections(self):
         M = OrthoReflection2D(self.direction)
         return [M]
+
+    def copy(self):
+        return OrthoReflection2D(self.direction)
 
     def __repr__(self):
         return f'OrthoReflection2D({self.direction.tolist()})'
@@ -194,6 +194,9 @@ class OrthoRotation2D(OrthoTransform2D):
     def get_reflections(self):
         return [self.refl_1, self.refl_2]
 
+    def copy(self):
+        return OrthoRotation2D(self.angle)
+
     def __repr__(self):
         return f'OrthoRotation2D({self.angle})'
 
@@ -235,6 +238,9 @@ class Translation2D(Transform2D):
 
         assert is_translation_2d(t), 'Expect second transform to be a translation.'
         return t.copy()
+
+    def copy(self):
+        return Translation2D(self.vec)
 
     def __repr__(self):
         v = self.vec.flatten().tolist()
@@ -347,6 +353,10 @@ class Reflection2D(Transform2D):
         T_inv = Translation2D(-1.0 * P).get_matrix()
 
         return T @ M @ T_inv
+
+    def copy(self):
+        line = Line2D(self.pt, self.direction)
+        return Reflection2D(line)
 
     def __repr__(self):
         l = self.line.__repr__()
@@ -504,6 +514,9 @@ class Rotation2D(Transform2D):
 
         return T @ R @ T_inv
 
+    def copy(self):
+        return Rotation2D(self.centre, self.angle)
+
     def __repr__(self):
         return f"""Rotation2D(
 {self.centre.tolist()},
@@ -600,6 +613,9 @@ class GlideReflection2D(Transform2D):
         line = Line2D(Q, M.direction)
 
         return GlideReflection2D(line, disp_value)
+
+    def copy(self):
+        return GlideReflection2D(self.line.copy(), self.displacement)
 
     def __repr__(self):
         line_repr = repr(self.line)

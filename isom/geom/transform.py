@@ -77,11 +77,13 @@ class Identity(Transform):
         assert isinstance(t, Identity), 'Expect first and second transform to be identity.'
         return Identity(M.dim)
 
+    def copy(self):
+        return Identity(self.dim)
+
     def __repr__(self):
         return f'Identity({self.dim})'
 
-    def copy(self):
-        return Identity(self.dim)
+
 
 def is_identity(transf: Transform):
     return isinstance(transf, Identity)

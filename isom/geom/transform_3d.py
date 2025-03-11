@@ -20,9 +20,6 @@ class Transform3D(Transform, ABC):
     Abstract base class for 3D isometries.
     """
 
-    def copy(self):
-        return eval(self.__repr__())
-
     @abstractmethod
     def inverse(self):
         """
@@ -107,6 +104,9 @@ class OrthoReflection3D(OrthoTransform3D):
         I_transf = self.apply(I)
         M[:3, :3] = I_transf
         return M
+
+    def copy(self):
+        return OrthoReflection3D(self.normal)
 
     def __repr__(self):
         n = self.normal.tolist()
@@ -229,6 +229,9 @@ class OrthoRotation3D(OrthoTransform3D):
         pts = self.refl_0.apply(pts)
         pts = self.refl_1.apply(pts)
         return pts
+
+    def copy(self):
+        return OrthoRotation3D(self.axis, self.angle)
 
     def __repr__(self):
         ax = self.axis.tolist()
@@ -414,6 +417,8 @@ class OrthoImproperRotation3D(OrthoTransform3D):
     def inverse(self):
         return OrthoImproperRotation3D(self.axis, -1.0 * self.angle)
 
+    def copy(self):
+        return OrthoImproperRotation3D(self.axis, self.angle)
 
     def __repr__(self):
         ax = self.axis.tolist()
@@ -465,6 +470,9 @@ class Translation3D(Transform3D):
 
         assert isinstance(t, Translation3D), 'Expect second transformation to be a translation.'
         return t.copy()
+
+    def copy(self):
+        return Translation3D(self.vec)
 
     def __repr__(self):
         v = self.vec.tolist()
@@ -564,6 +572,9 @@ class Reflection3D(Transform3D):
         M = self.ortho_reflection.get_matrix()
 
         return T @ M @ T_inv
+
+    def copy(self):
+        return Reflection3D(self.plane.copy())
 
     def __repr__(self):
         plane_repr = repr(self.plane)
@@ -693,6 +704,9 @@ class Rotation3D(Transform3D):
 
         return np.allclose(R, R_other) and np.allclose(p, p_other)
 
+    def copy(self):
+        return Rotation3D(self.point, self.ortho_rot.axis, self.ortho_rot.angle)
+
     def __repr__(self):
         c = self.point.tolist()
         ax = self.ortho_rot.axis.tolist()
@@ -810,6 +824,9 @@ class ImproperRotation3D(Transform3D):
 
         return pts
 
+    def copy(self):
+        return ImproperRotation3D(self.point, self.axis, self.angle)
+
     def __repr__(self):
         p = self.point.tolist()
         ax = self.axis.tolist()
@@ -905,6 +922,8 @@ class GlideReflection3D(Transform3D):
 
         return cls(M.plane, t.vec)
 
+    def copy(self):
+        return GlideReflection3D(self.reflection.plane.copy(), self.translation)
 
     def __repr__(self):
         plane = repr(self.reflection.plane)
@@ -998,6 +1017,8 @@ class Twist3D(Transform3D):
 
         return cls(rot, displacement)
 
+    def copy(self):
+        return Twist3D(self.rotation.copy(), self.displacement)
 
     def __repr__(self):
         rot = repr(self.rotation)
@@ -1242,7 +1263,12 @@ def reflections_for_frame(uvw):
     if np.allclose(R_j, v):
         S = Identity(3)
     else:
-        normal = cross_product(u, v + R_j)
+        if np.allclose(v, -1.0 * R_j):
+            # v and R_j are opposites
+            normal = v
+        else:
+            normal = cross_product(u, v + R_j)
+
         S = OrthoReflection3D(normal)
 
     SR_i = S.apply(R.apply(i))
