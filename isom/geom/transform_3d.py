@@ -8,7 +8,8 @@ from random import shuffle
 
 from isom.utils.general import (
     ensure_unit_vec, ensure_vec, validate_pts, wrap_angle_minus_pi_to_pi, rotate_vector_3d, cross_product,
-    angle_between_vectors, vecs_parallel, rotation_matrix_from_axis_and_angle, rotate_vectors_3d, vecs_perpendicular
+    angle_between_vectors, vecs_parallel, rotation_matrix_from_axis_and_angle, rotate_vectors_3d, vecs_perpendicular,
+    random_vector
 )
 from isom.geom.transform import Transform, Identity, is_identity
 from isom.geom.objects import Plane3D, Line3D
@@ -1292,56 +1293,53 @@ def reflections_for_frame(uvw):
 def random_ortho_reflection_3d():
     # Random orthogonal 3D reflection.
     # Hacky method.
-    v = np.random.rand(3) - [0.5, 0.5, 0.5]
+    v = random_vector()
     ortho_refl = OrthoReflection3D(v)
     return ortho_refl
 
 
 def random_reflection_3d():
     # Random general 3D reflection.
-    # Hacky method.
-    n = np.random.rand(3) - [0.5, 0.5, 0.5]
-    P = np.random.rand(3) * 10
+    n = random_vector()
+    P = random_vector() * 10
     plane = Plane3D(n, P)
     return Reflection3D(plane)
 
 
 def random_ortho_rotation_3d():
     # Random orthogonal 3D rotation.
-    axis = np.random.rand(3) - [0.5, 0.5, 0.5]
+    axis = random_vector()
     alpha = np.random.rand() * 2.0 * np.pi
+    while np.isclose(alpha, 0.0) or np.isclose(alpha, np.pi):
+        alpha = np.random.rand() * 2.0 * np.pi
+
     ortho_rot = OrthoRotation3D(axis, alpha)
     return ortho_rot
 
 
 def random_rotation_3d():
     # Random 3D rotation.
-    P = np.random.rand(3) * 10
-    axis = np.random.rand(3) - [0.5, 0.5, 0.5]
-    alpha = np.random.rand() * 2.0 * np.pi
-
-    rot = Rotation3D(P, axis, alpha)
+    P = random_vector() * 10
+    ortho_rot = random_ortho_rotation_3d()
+    rot = Rotation3D(P, ortho_rot.axis, ortho_rot.angle)
     return rot
 
 
 def random_ortho_improper_rotation_3d():
     # Random orthogonal 3D improper rotation.
-    axis = np.random.rand(3) - [0.5, 0.5, 0.5]
-    alpha = np.random.rand() * 2.0 * np.pi
-
-    return OrthoImproperRotation3D(axis, alpha)
+    ortho_rot = random_ortho_rotation_3d()
+    return OrthoImproperRotation3D(ortho_rot.axis, ortho_rot.angle)
 
 
 def random_improper_rotation_3d():
     # Random 3D improper rotation.
     P = np.random.rand(3) * 20.0 - 10.0
-    axis = np.random.rand(3) - [0.5, 0.5, 0.5]
-    alpha = np.random.rand() * 2.0 * np.pi
-    return ImproperRotation3D(P, axis, alpha)
+    ortho_rot = random_ortho_rotation_3d()
+    return ImproperRotation3D(P, ortho_rot.axis, ortho_rot.angle)
 
 
 def random_translation_3d():
-    v = np.random.rand(3) * 20.0 - 10.0
+    v = random_vector() * 20.0
     return Translation3D(v)
 
 def random_glide_reflection_3d():
@@ -1350,8 +1348,7 @@ def random_glide_reflection_3d():
 
     n = plane.normal
 
-    v = np.random.rand(3) * 20.0 - 10.0
-    v = ensure_vec(v)
+    v = random_vector() * 20
 
     v_perp = (n.T @ v) * n
     v_para = v - v_perp
