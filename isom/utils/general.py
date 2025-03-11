@@ -26,6 +26,22 @@ def vecs_parallel(u, v):
     vv = ensure_unit_vec(v)
     return np.isclose(np.abs(np.abs(np.sum(uu * vv))), 1.0)
 
+def vec_length(v):
+    return np.sqrt(np.sum(v * v))
+
+def random_vector(dim=3):
+    """
+    In a unit cube centred on the origin.
+    """
+    v = np.random.rand(dim) - [0.5, 0.5, 0.5]
+    while vec_length(v) < 0.05:
+        # Avoid small vectors.
+        v = np.random.rand(dim) - [0.5, 0.5, 0.5]
+    return ensure_vec(v)
+
+
+
+
 def make_pts_homogenous(points_in):
     pts = validate_pts(points_in)
     spatial_dim, n_pts = pts.shape
