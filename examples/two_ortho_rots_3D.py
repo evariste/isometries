@@ -11,7 +11,7 @@ from isom.geom.objects import Glyph3D
 from isom.geom.transform_3d import OrthoRotation3D, Translation3D
 
 def main():
-    os.makedirs('output/ex3', exist_ok=True)
+    os.makedirs('output/two_ortho_rots_3D', exist_ok=True)
 
     g = Glyph3D()
 
