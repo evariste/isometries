@@ -962,7 +962,7 @@ class Twist3D(Transform3D):
         """
         super().__init__()
         self.rotation = rot
-        self.displacement = displacement
+        self.displacement = float(displacement)
         v = displacement * rot.ortho_rot.axis
         self.translation = Translation3D(v)
         return
