@@ -9,12 +9,14 @@ Date: 08/06/2023
 import numpy as np
 from isom.utils.general import (
     ensure_vec, ensure_unit_vec, vecs_parallel, vecs_perpendicular, cross_product, wrap_angle_minus_pi_to_pi,
-    rotation_matrix_from_axis_and_angle
+    rotation_matrix_from_axis_and_angle, get_normal_vector
 )
 from isom.utils.vtk import run_triangle_filter
 from isom.io.vtk import make_vtk_polydata, polydata_save
 from matplotlib.patches import Polygon
 
+from vtkmodules.vtkFiltersCore import vtkTubeFilter
+from vtkmodules.vtkFiltersSources import vtkLineSource
 
 
 class Line3D(object):
@@ -76,6 +78,48 @@ class Line3D(object):
 {d},
 )"""
 
+class LineSegment:
+    thickness_ratio = 0.001
+    width = None
+    def __init__(
+            self,
+            pt_1,
+            pt_2,
+    ):
+        self.pt_1 = ensure_vec(pt_1)
+        self.pt_2 = ensure_vec(pt_2)
+
+        if np.allclose(self.pt_1, self.pt_2):
+            raise Exception('Points must be distinct.')
+
+        return
+
+    def length(self):
+        d = self.pt_1 - self.pt_2
+        return np.sqrt(np.sum(d * d))
+
+    def to_vtk(self, width=None):
+
+        line = vtkLineSource()
+        line.SetPoint1(*self.pt_1)
+        line.SetPoint2(*self.pt_2)
+
+        tube = vtkTubeFilter()
+        tube.SetInputConnection(line.GetOutputPort())
+        if width is None:
+            width = 2.0 * self.thickness_ratio * self.length()
+        tube.SetRadius(width / 2.0)
+        tube.SetNumberOfSides(50)
+        tube.Update()
+
+        return tube.GetOutput()
+
+
+    def save(self, file_name, width=None):
+        pd = self.to_vtk(width=width)
+        polydata_save(pd, file_name)
+
+
 
 class Plane3D:
     def __init__(self, normal, pt):
@@ -92,6 +136,11 @@ class Plane3D:
 
     def parallel_to(self, other: Plane3D):
         return vecs_parallel(self.normal, other.normal)
+
+    def get_basis(self):
+        u = get_normal_vector(self.normal)
+        v = cross_product(u, self.normal)
+        return u, v
 
     @classmethod
     def from_points(cls, O, P, Q):
@@ -137,7 +186,7 @@ class Plane3D:
 
         pt_intersection = l.point_from_parameter(mu)
 
-        raise pt_intersection
+        return pt_intersection
 
     def intersection_with_plane(self, other: Plane3D):
 
@@ -265,6 +314,21 @@ class Glyph3D(object):
 
         return np.allclose(self.points, other_pts)
 
+    def bounds(self):
+        min_vals = np.min(self.points, axis=1)
+        max_vals = np.max(self.points, axis=1)
+        x0 = min_vals[0]
+        y0 = min_vals[1]
+        z0 = min_vals[2]
+        x1 = max_vals[0]
+        y1 = max_vals[1]
+        z1 = max_vals[2]
+
+        return x0, y0, z0, x1, y1, z1
+
+
+
+
 
 
 class Glyph2D(object):
@@ -330,10 +394,23 @@ def get_glyph_bounds(glyphs):
     all_bounds = np.asarray(all_bounds)
     min_vals = np.min(all_bounds, axis=0)
     max_vals = np.max(all_bounds, axis=0)
+
+    if isinstance(glyphs[0], Glyph3D):
+        x0 = min_vals[0]
+        y0 = min_vals[1]
+        z0 = min_vals[2]
+
+        x1 = max_vals[3]
+        y1 = max_vals[4]
+        z1 = max_vals[5]
+        return x0, y0, z0, x1, y1, z1
+
     x0 = min_vals[0]
     y0 = min_vals[1]
+
     x1 = max_vals[2]
     y1 = max_vals[3]
+
     return x0, y0, x1, y1
 
 class Line2D:
