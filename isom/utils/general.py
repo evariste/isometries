@@ -359,7 +359,7 @@ def angle_between_vectors(v_first, v_second):
 
 def get_normal_vector(v):
     """
-    Return an arbitrary normal vector to v
+    Return an arbitrary normal vector to 3D vector v.
     """
     assert v.size == 3, 'Expect 3D vector.'
 
@@ -378,10 +378,7 @@ def get_normal_vector(v):
             assert np.abs(x) > 0
             a, b, c = 0, 1, 0
 
-    mag = np.sqrt(a * a + b * b + c * c)
-    w = np.asarray([a, b, c]) / mag
-    w = np.reshape(w, (3, 1))
-    return w
+    return ensure_unit_vec([a, b, c])
 
 
 def axis_from_rotation_matrix(R: np.ndarray):
