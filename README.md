@@ -9,6 +9,8 @@ when solving problems involving rotations, reflections, etc., in 2-D and 3-D.
 The emphasis is on using _direct geometric methods_
 to model rotations, etc., 
 
+Some notes on this are included in teh file `two_rotations.pdf`.
+
 Using matrices is an alternative way of modelling isometries
 and these are used partially, mainly for tasks such as checking
 that two isometries are 'equal'. Modelling orthogonal
