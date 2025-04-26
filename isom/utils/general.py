@@ -24,7 +24,7 @@ def vecs_perpendicular(u, v):
 def vecs_parallel(u, v):
     uu = ensure_unit_vec(u)
     vv = ensure_unit_vec(v)
-    return np.isclose(np.abs(np.abs(np.sum(uu * vv))), 1.0)
+    return np.isclose(np.abs(np.sum(uu * vv)), 1.0)
 
 def vec_length(v):
     return np.sqrt(np.sum(v * v))
