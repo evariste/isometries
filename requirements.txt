@@ -1,4 +1,4 @@
-setuptools==75.3.0
+setuptools==78.1.0
 numpy==2.0.2
 xmltodict==0.14.2
 pillow==11.0.0
