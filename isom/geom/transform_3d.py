@@ -39,6 +39,24 @@ class OrthoTransform3D(Transform3D, ABC):
         Return between one and three reflections for the orthogonal transformation.
         """
 
+    @classmethod
+    def from_reflections(cls, refls):
+
+        n_refls = len(refls)
+
+        if n_refls == 0:
+            return Identity(3)
+
+        if n_refls == 1:
+            return OrthoReflection3D.from_reflections(refls)
+
+        if n_refls == 2:
+            return OrthoRotation3D.from_reflections(refls)
+
+        if n_refls == 3:
+            return OrthoImproperRotation3D.from_reflections(refls)
+
+        raise Exception('Invalid number of reflections.')
 
 
 class OrthoReflection3D(OrthoTransform3D):
@@ -66,7 +84,10 @@ class OrthoReflection3D(OrthoTransform3D):
         return [self.copy(), Identity(3)]
 
     @classmethod
-    def from_reflections(cls, refl):
+    def from_reflections(cls, refls):
+        assert len(refls) == 1, 'Expect exactly one reflection.'
+        refl = refls[0]
+
         if is_identity(refl):
             return Identity(3)
         assert isinstance(refl, OrthoReflection3D), 'Expect a reflection.'
@@ -202,7 +223,11 @@ class OrthoRotation3D(OrthoTransform3D):
         return cls(axis, theta)
 
     @classmethod
-    def from_reflections(cls, refl_0: OrthoReflection3D, refl_1: OrthoReflection3D):
+    def from_reflections(cls, refls):
+        assert len(refls) == 2, 'Expect exactly two reflections.'
+
+        refl_0, refl_1 = refls
+
         plane_0 = refl_0.plane
         plane_1 = refl_1.plane
         return OrthoRotation3D.from_planes(plane_0, plane_1)
@@ -275,12 +300,11 @@ class OrthoImproperRotation3D(OrthoTransform3D):
         return M.copy()
 
     @classmethod
-    def from_reflections(
-            cls,
-            r_0: OrthoReflection3D,
-            r_1: OrthoReflection3D,
-            r_2: OrthoReflection3D,
-    ):
+    def from_reflections(cls, refls):
+        assert len(refls) == 3, 'Expect exactly three reflections.'
+
+        r_0, r_1, r_2 = refls
+
         plane_0 = r_0.plane
         plane_1 = r_1.plane
         plane_2 = r_2.plane
@@ -379,7 +403,12 @@ class OrthoImproperRotation3D(OrthoTransform3D):
 
 
         theta = 2.0 * angle_between_vectors(n_0, n_1)
-        line = r_0.plane.intersection(r_1.plane)
+
+        try:
+            line = r_0.plane.intersection(r_1.plane)
+        except:
+            raise Exception('Cannot find plane intersection.')
+
         return OrthoImproperRotation3D(line.direction, theta)
 
     @classmethod
@@ -393,7 +422,7 @@ class OrthoImproperRotation3D(OrthoTransform3D):
         r_0 = OrthoReflection3D(plane_0)
         r_1 = OrthoReflection3D(plane_1)
         r_2 = OrthoReflection3D(plane_2)
-        return OrthoImproperRotation3D.from_reflections(r_0, r_1, r_2)
+        return OrthoImproperRotation3D.from_reflections([r_0, r_1, r_2])
 
 
 
@@ -406,9 +435,7 @@ class OrthoImproperRotation3D(OrthoTransform3D):
     def get_matrix(self):
         M = self.rot.get_matrix()
         N = self.refl.get_matrix()
-        NM = M @ N
-
-        return NM
+        return M @ N
 
     def get_reflections(self):
         R0, R1 = self.rot.get_reflections()
@@ -1208,19 +1235,8 @@ def compose_ortho_3d(t_a: OrthoTransform3D, t_b: OrthoTransform3D):
     uvw = t_b.apply(t_a.apply(ijk))
     refls = reflections_for_frame(uvw)
 
-    if len(refls) == 0:
-        return Identity(3)
+    return OrthoTransform3D.from_reflections(refls)
 
-    if len(refls) == 1:
-        return refls[0]
-
-    if len(refls) == 2:
-        return OrthoRotation3D.from_reflections(*refls)
-
-    if len(refls) == 3:
-        return OrthoImproperRotation3D.from_reflections(*refls)
-
-    raise Exception('Unexpected number of reflections.')
 
 
 
