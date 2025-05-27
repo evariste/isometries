@@ -2,6 +2,8 @@ import sys
 import os
 import numpy as np
 
+np.random.seed(123)
+
 from isom.geom.transform import is_identity
 from isom.utils.general import apply_hom_matrix_to_points, rotate_vector_3d
 from isom.geom.objects import Glyph3D
@@ -10,7 +12,7 @@ from isom.geom.transform_3d import (
     compose_3d,
     OrthoReflection3D,
     OrthoRotation3D, Rotation3D,
-    OrthoImproperRotation3D, ImproperRotation3D,
+    OrthoImproperRotation3D,
 )
 
 
