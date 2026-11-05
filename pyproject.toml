@@ -9,6 +9,7 @@ dependencies = [
     "numpy-quaternion>=2024.0.13",
     "vtk>=9.6.2",
     "xmltodict>=1.0.4",
+    "pillow>=13.0.0",
 ]
 
 [build-system]
