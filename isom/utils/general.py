@@ -468,9 +468,9 @@ def skew_symmetric_matrix(v):
 
     s = np.zeros((3, 3))
 
-    s[0, 2] = v[1]
-    s[1, 0] = v[2]
-    s[2, 1] = v[0]
+    s[0, 2] = v.flatten()[1]
+    s[1, 0] = v.flatten()[2]
+    s[2, 1] = v.flatten()[0]
 
     return s + -1 * s.T
 

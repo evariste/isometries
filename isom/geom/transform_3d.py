@@ -1037,6 +1037,8 @@ class Twist3D(Transform3D):
         axis = M.axis
         # Components of v parallel and perpendicular to rotation axis.
         displacement = axis.T @ v
+        displacement = displacement.item()
+
         v_para = displacement * axis
         v_perp = v - v_para
 

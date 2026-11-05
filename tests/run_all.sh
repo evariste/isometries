@@ -6,7 +6,7 @@ for f in *.py
 do
 
   echo "Running $f"
-  python "${f}"
+  uv run "${f}"
   echo
   echo "================================================================"
   echo

@@ -101,8 +101,8 @@ class LineSegment:
     def to_vtk(self, width=None):
 
         line = vtkLineSource()
-        line.SetPoint1(*self.pt_1)
-        line.SetPoint2(*self.pt_2)
+        line.SetPoint1(*self.pt_1.flatten())
+        line.SetPoint2(*self.pt_2.flatten())
 
         tube = vtkTubeFilter()
         tube.SetInputConnection(line.GetOutputPort())
@@ -422,8 +422,10 @@ class Line2D:
         self.perp = [-1.0 * self.direction[1], self.direction[0]]
 
         u, v = self.direction
+        u, v = u.item(), v.item()
 
         p0, p1 = self.point
+        p0, p1 = p0.item(), p1.item()
 
         # ax + by = c
         self.a = float(v)
